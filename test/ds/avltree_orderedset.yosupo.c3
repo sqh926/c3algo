@@ -1,0 +1,61 @@
+// PROBLEM: https://judge.yosupo.jp/problem/ordered_set
+
+import c3algo::io;
+import c3algo::ds::avltree;
+
+fn void main()
+{
+	FastInput inp;
+	inp.init();
+	defer inp.free();
+	FastOutput out;
+	out.init();
+	defer out.free();
+	int n = inp.read(int);
+	int q = inp.read(int);
+
+	AVLTree tree = null;
+
+	for (int i = 0; i < n; i++)
+	{
+		int x = inp.read(int);
+		tree = avltree::insert(tree, x);
+	}
+	for (int i = 0; i < q; i++)
+	{
+		int kind = inp.read(int);
+		int x    = inp.read(int);
+		if (kind == 0)
+		{
+			tree = avltree::insert(tree, x);
+		}
+		else if (kind == 1)
+		{
+			tree = avltree::delete(tree, x);
+		}
+		else if (kind == 2)
+		{
+			sz s = tree.scnt();
+			if ((sz)x > s)
+			{
+				out.writeln(-1);
+			}
+			else
+			{
+				out.writeln(avltree::kth(tree, (sz)x - 1));
+			}
+		}
+		else if (kind == 3)
+		{
+			out.writeln(avltree::count_leq(tree, x));
+		}
+		else if (kind == 4)
+		{
+			out.writeln(avltree::floor(tree, x));
+		}
+		else
+		{
+			out.writeln(avltree::ceil(tree, x));
+		}
+	}
+}
