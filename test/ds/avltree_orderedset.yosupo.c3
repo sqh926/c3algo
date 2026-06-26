@@ -19,7 +19,7 @@ fn void main()
 	for (int i = 0; i < n; i++)
 	{
 		int x = inp.read(int);
-		tree = avltree::insert(tree, x);
+		avltree::insert(&tree, x);
 	}
 	for (int i = 0; i < q; i++)
 	{
@@ -27,35 +27,35 @@ fn void main()
 		int x    = inp.read(int);
 		if (kind == 0)
 		{
-			tree = avltree::insert(tree, x);
+			avltree::insert(&tree, x);
 		}
 		else if (kind == 1)
 		{
-			tree = avltree::delete(tree, x);
+			avltree::erase(&tree, x);
 		}
 		else if (kind == 2)
 		{
-			sz s = tree.scnt();
+			sz s = tree.size();
 			if ((sz)x > s)
 			{
 				out.writeln(-1);
 			}
 			else
 			{
-				out.writeln(avltree::kth(tree, (sz)x - 1));
+				out.writeln(avltree::kth(&tree, (sz)x - 1));
 			}
 		}
 		else if (kind == 3)
 		{
-			out.writeln(avltree::count_leq(tree, x));
+			out.writeln(avltree::count_leq(&tree, x));
 		}
 		else if (kind == 4)
 		{
-			out.writeln(avltree::floor(tree, x));
+			out.writeln(avltree::floor(&tree, x));
 		}
 		else
 		{
-			out.writeln(avltree::ceil(tree, x));
+			out.writeln(avltree::ceil(&tree, x));
 		}
 	}
 }

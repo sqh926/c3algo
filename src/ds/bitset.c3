@@ -2,6 +2,7 @@
  @require SIZE > 0 : "The size of the bitset in bits must be at least 1"
  @require SIZE / (uint::size * 8) < uint::max
 *>
+// Cannot put Word ^^^ here instead of uint
 module c3algo::ds::bitset <SIZE>;
 
 alias Word = uint;
@@ -140,9 +141,15 @@ fn sz BitSet.cardinality(&self) @nodiscard
  @return "Returns true if any bit is set, false otherwise"
  @pure
 *>
-fn bool BitSet.any_set(&self) @nodiscard
+fn bool BitSet.any_set(&self) @nodiscard @inline
 {
-	foreach (x : self.data) if (x != 0) return true;
+	foreach (x : self.data)
+	{
+		if (x != 0)
+		{
+			return true;
+		}
+	}
 	return false;
 }
 
@@ -161,10 +168,10 @@ fn bool BitSet.none_set(&self) @nodiscard @inline
 *>
 fn sz BitSet.min_bit_set(&self) @nodiscard
 {
-	for (sz i = 0; i < BLOCKS; i++)
+	foreach (i, x : self.data)
 	{
-		if (self.data[i] == (Word)0) continue;
-		sz r = i * BITS + self.data[i].ctz();
+		if (x == (Word)0) continue;
+		sz r = i * BITS + x.ctz();
 		return r < SIZE ? r : (sz)SIZE;
 	}
 	return SIZE;
@@ -184,9 +191,12 @@ fn sz BitSet.len(&self) @operator(len) @inline @nodiscard
 
  @param [&in] set : "The bitset to xor with"
 *>
-fn void BitSet.xor_assign(&self, BitSet* set)
+fn void BitSet.xor_assign(&self, BitSet* set @noalias) @inline
 {
-	foreach (i, &x : self.data) *x ^= set.data[i];
+	foreach (i, &x : self.data)
+	{
+		*x ^= set.data[i];
+	}
 }
 
 <*
@@ -194,9 +204,12 @@ fn void BitSet.xor_assign(&self, BitSet* set)
 
  @param [&in] set : "The bitset to or with"
 *>
-fn void BitSet.or_assign(&self, BitSet* set)
+fn void BitSet.or_assign(&self, BitSet* set @noalias) @inline
 {
-	foreach (i, &x : self.data) *x |= set.data[i];
+	foreach (i, &x : self.data)
+	{
+		*x |= set.data[i];
+	}
 }
 
 <*
@@ -204,21 +217,24 @@ fn void BitSet.or_assign(&self, BitSet* set)
 
  @param [&in] set : "The bitset to & with"
 *>
-fn void BitSet.and_assign(&self, BitSet* set)
+fn void BitSet.and_assign(&self, BitSet* set @noalias) @inline
 {
-	foreach (i, &x : self.data) *x &= set.data[i];
+	foreach (i, &x : self.data)
+	{
+		*x &= set.data[i];
+	}
 }
 
 <*
  Perform xor over all bits from a starting index onwards, mutating itself.
 
  @param [&in] set : "The bitset to xor with"
- @param hint : "Lowest index that may differ"
+ @param hint : "Lowest index of set that is not zero"
  @return "The resulting bitset"
 
- @require hint < SIZE && hint >= 0 : "Wrong hint"
+ @require hint < SIZE && hint >= 0 : "Index was out of range"
 *>
-macro BitSet BitSet.xor_hint(&self, BitSet* set, sz hint)
+fn BitSet BitSet.xor_hint(&self, BitSet* set @noalias, sz hint) @inline
 {
 	for (sz i = hint / BITS; i < BLOCKS; i++)
 	{
@@ -268,6 +284,7 @@ macro BitSet BitSet.and_self(&self, BitSet set) @operator(&=)
 
  @param set : "The bit set to xor with"
  @return "The resulting bitset"
+
  @pure
 *>
 macro BitSet BitSet.xor(&self, BitSet set) @operator(^) @nodiscard
@@ -281,6 +298,7 @@ macro BitSet BitSet.xor(&self, BitSet set) @operator(^) @nodiscard
 
  @param set : "The bit set to or with"
  @return "The resulting bitset"
+
  @pure
 *>
 macro BitSet BitSet.or(&self, BitSet set) @operator(|) @nodiscard
@@ -290,10 +308,11 @@ macro BitSet BitSet.or(&self, BitSet set) @operator(|) @nodiscard
 }
 
 <*
- Perform & over all bits, returning a new bit set.
+ Perform & over all bits, returning a new bitset.
 
  @param set : "The bit set to & with"
- @return "The resulting bit set"
+ @return "The resulting bitset"
+
  @pure
 *>
 macro BitSet BitSet.and(&self, BitSet set) @operator(&) @nodiscard
@@ -306,6 +325,7 @@ macro BitSet BitSet.and(&self, BitSet set) @operator(&) @nodiscard
  Shift all bits towards higher indices, mutating itself.
 
  @param shift : "The number of positions to shift left"
+
  @require shift >= 0 : "Shift must be a positive number"
 *>
 fn void BitSet.shl_assign(&self, sz shift)

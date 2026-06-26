@@ -12,7 +12,7 @@ int[MAXN] lead;
 
 fn void main()
 {
-	FastInput inp;
+	FastInput inp @noinit;
 	inp.init();
 	defer inp.free();
 
