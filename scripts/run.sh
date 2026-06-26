@@ -15,11 +15,11 @@ verbose="${VERBOSE:-0}"
 one() {
     local t="$1"
     local label; label=$(basename "$t")
-    [ -f "$t" ] || { printf '%-28s %s\n' "$label" "x  no such file" >&2; return 2; }
+    [ -f "$t" ] || { printf '%-40s %s\n' "$label" "x  no such file" >&2; return 2; }
 
     local url
     url=$(grep -oiE 'PROBLEM:?[[:space:]]*https?://\S+' "$t" | grep -oiE 'https?://\S+' | head -1)
-    [ -n "$url" ] || { printf '%-28s %s\n' "$label" "x  missing // PROBLEM: <url>" >&2; return 2; }
+    [ -n "$url" ] || { printf '%-40s %s\n' "$label" "x  missing // PROBLEM: <url>" >&2; return 2; }
 
     local slug cases out
     slug=$(basename "${url%%\?*}")
@@ -27,7 +27,7 @@ one() {
     if [ -z "$(ls -A "$cases/test" 2>/dev/null)" ]; then
         if ! out=$("$oj" download --system "$url" -d "$cases/test" 2>&1); then
             [ "$verbose" = 1 ] && printf '%s\n' "$out" >&2
-            printf '%-28s %s\n' "$label" "x  fetch failed"; return 1
+            printf '%-40s %s\n' "$label" "x  fetch failed"; return 1
         fi
     fi
 
@@ -38,7 +38,7 @@ one() {
 
     if ! out=$(c3c compile "$t" "${srcs[@]}" "$opt" -o "$bin" 2>&1); then
         [ "$verbose" = 1 ] && printf '%s\n' "$out" >&2
-        printf '%-28s %s\n' "$label" "x  build failed"; return 1
+        printf '%-40s %s\n' "$label" "x  build failed"; return 1
     fi
 
     local rc slowest mark
@@ -49,7 +49,7 @@ one() {
     [ -n "$slowest" ] || slowest="?"
 
     [ $rc -eq 0 ] && mark="ok" || mark="x "
-    printf '%-28s %s  %ss\n' "$label" "$mark" "$slowest"
+    printf '%-40s %s  %ss\n' "$label" "$mark" "$slowest"
     return $rc
 }
 
