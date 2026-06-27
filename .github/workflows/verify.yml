@@ -2,17 +2,49 @@ name: verify
 
 on:
   push:
-    branches: [main]
-  pull_request:
+    branches:
+      - "main"
   workflow_dispatch:
+    inputs:
+      ignore_prev_result:
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
-  verify:
+  setup:
     runs-on: ubuntu-latest
-    env:
-      COMPETITIVE_VERIFY_FILES_PATH: .competitive-verifier/verify_files.json
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up competitive-verifier
+        uses: competitive-verifier/actions/setup@v2
+        with:
+          cache-pip: true
+
+      - name: Resolve
+        run: python scripts/gen_verify_files.py verify_files.json
+
+      - name: Upload verify_files.json
+        uses: competitive-verifier/actions/upload-verify-artifact@v2
+        with:
+          file: verify_files.json
+
+  verify:
+    runs-on: ubuntu-latest
+    needs: [setup]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install c3c
         run: |
@@ -20,19 +52,105 @@ jobs:
           tar xzf c3.tar.gz
           echo "$PWD/c3" >> "$GITHUB_PATH"
 
-      - uses: actions/setup-python@v5
+      - name: Restore cached results
+        if: ${{ ! inputs.ignore_prev_result }}
+        uses: actions/cache/restore@v4
+        id: restore-cached-results
         with:
-          python-version: "3.12"
-      - run: pip install competitive-verifier
+          path: ${{ github.workspace }}/merged-result.json
+          key: ${{ runner.os }}-verify-result-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-verify-result-
 
-      - name: Generate config
-        run: python scripts/gen_verify_files.py "$COMPETITIVE_VERIFY_FILES_PATH"
+      - name: Download verify_files.json
+        uses: competitive-verifier/actions/download-verify-artifact@v2
 
-      - uses: actions/cache@v4
+      - name: Set up competitive-verifier
+        uses: competitive-verifier/actions/setup@v2
         with:
-          path: .competitive-verifier/cache
-          key: verifier-${{ hashFiles('.competitive-verifier/verify_files.json') }}
-          restore-keys: verifier-
+          cache-pip: true
 
-      - run: competitive-verifier download
-      - run: competitive-verifier verify --no-download --check-error --write-summary
+      - name: Verify
+        uses: competitive-verifier/actions/verify@v2
+        with:
+          destination: ${{ runner.temp }}/result.json
+          timeout: 1800
+          prev-result: ${{ steps.restore-cached-results.outputs.cache-hit && 'merged-result.json' || '' }}
+
+      - name: Upload result artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: Result-${{ runner.os }}
+          path: ${{ runner.temp }}/result.json
+          retention-days: 1
+
+  docs-and-check:
+    runs-on: ubuntu-latest
+    needs: [verify]
+    outputs:
+      upload-pages: ${{ steps.upload-pages.outcome == 'success' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download verify_files.json and all artifacts
+        id: all-artifacts
+        uses: competitive-verifier/actions/download-verify-artifact@v2
+        with:
+          download-all: true
+          artifact-root: .artifacts/
+
+      - name: Set up competitive-verifier
+        uses: competitive-verifier/actions/setup@v2
+        with:
+          cache-pip: true
+
+      - name: Merge results
+        uses: competitive-verifier/actions/merge-result@v2
+        with:
+          result-files: ${{ steps.all-artifacts.outputs.artifacts-root }}/Result-*/result.json
+          output-path: ${{ github.workspace }}/merged-result.json
+
+      - name: Docs
+        uses: competitive-verifier/actions/docs@v2
+        with:
+          verify-result: ${{ github.workspace }}/merged-result.json
+          destination: _jekyll
+          write-summary: true
+
+      - name: Save result
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}/merged-result.json
+          key: ${{ runner.os }}-verify-result-${{ github.sha }}
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      - name: Build with Jekyll
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: _jekyll
+          destination: _site
+      - name: Upload artifact
+        id: upload-pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Check
+        uses: competitive-verifier/actions/check@v2
+        with:
+          verify-result: ${{ steps.all-artifacts.outputs.artifacts-root }}/Result-*/result.json
+
+  deploy:
+    if: (success() || failure()) && github.ref == 'refs/heads/main' && needs.docs-and-check.outputs.upload-pages == 'true'
+    needs: docs-and-check
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
