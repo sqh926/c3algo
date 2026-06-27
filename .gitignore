@@ -5,3 +5,5 @@ out/
 \#*\#
 .\#*
 .idea/
+.competitive-verifier/
+verify_files.json
