@@ -1,7 +1,11 @@
 // PROBLEM: https://judge.yosupo.jp/problem/point_add_range_sum
 
+import c3algo::algebra;
 import c3algo::ds::segtree;
 import c3algo::io;
+
+alias SumLong = Sum{long};
+alias Seg = SegTree{SumLong};
 
 fn void main()
 {
@@ -14,12 +18,12 @@ fn void main()
 
 	int n = inp.read(int);
 	int q = inp.read(int);
-	SegTree st;
-	st.init(mem, (sz)n);
+	Seg st @noinit;
+	st.init(mem, (sz)n, (SumLong) { 0 });
 	for (int i = 0; i < n; i++)
 	{
 		int x = inp.read(int);
-		st.set(i, x, 0, 0, (sz)n);
+		st.set(i, (SumLong) { x }, 0, 0, st.size);
 	}
 	while (q-- > 0)
 	{
@@ -28,13 +32,13 @@ fn void main()
 		{
 			int p = inp.read(int);
 			int x = inp.read(int);
-			st.set(p, x, 0, 0, (sz)n);
+			st.set(p, st.get(p).op((SumLong) { x }), 0, 0, st.size);
 		}
 		else
 		{
 			int l = inp.read(int);
 			int r = inp.read(int);
-			out.writeln(st.sum(l, r, 0, 0, (sz)n));
+			out.writeln(st.exec_on_seg(l, r, 0, 0, st.size).v);
 		}
 	}
 }
