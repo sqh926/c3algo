@@ -1,33 +1,20 @@
 // @title Fenwick Tree
-module c3algo::ds::fenwick;
+module c3algo::ds::fenwick <Monoid>;
 
 import std::collections::list;
 
-struct Node
-{
-	long value;
-}
-
-alias NodeList = List{Node};
-
-fn Node* Node.init(&self, long value)
-{
-	self.value = value;
-	return self;
-}
-
-
 struct FenwickTree
 {
-	NodeList tree;
+	List{Monoid} tree;
 }
 
 fn FenwickTree* FenwickTree.init(&self, Allocator allocator, sz n)
 {
+	Monoid id = ((Monoid) { }).e();
 	self.tree.init(allocator, n);
 	for (sz i = 0; i < n; i++)
 	{
-		self.tree.push({ .value = 0 });
+		self.tree.push(id);
 	}
 	return self;
 }
@@ -35,28 +22,46 @@ fn FenwickTree* FenwickTree.init(&self, Allocator allocator, sz n)
 fn void FenwickTree.free(&self)
 {
 	self.tree.free();
+	*self = { };
 }
 
-fn void FenwickTree.set(&self, sz i, long value)
+// a[i] = a[i].op(v)
+fn void FenwickTree.add(&self, sz i, Monoid v) @inline
 {
 	for (; i < self.tree.len(); i = i | (i + 1))
 	{
-		self.tree[i].value += value;
+		self.tree[i] = self.tree[i].op(v);
 	}
 }
 
-fn long FenwickTree.pref(&self, sz r)
+// Assumes commutativity
+fn Monoid FenwickTree.fold(&self, sz r) @inline
 {
-	long sum = 0;
+	Monoid acc = ((Monoid) { }).e();
 	for (; r > 0; r = r & (r - 1))
 	{
-		sum += self.tree[r - 1].value;
+		acc = self.tree[r - 1].op(acc);
 	}
-	return sum;
+	return acc;
 }
 
-
-fn long FenwickTree.range(&self, sz l, sz r)
+// Monoid needs to be a group
+macro Monoid FenwickTree.range(&self, sz l, sz r)
 {
-	return self.pref(r) - self.pref(l);
+	$if $defined((Monoid) { }.inv()):
+		return self.fold(r).op(self.fold(l).inv());
+	$else
+		$error "fenwick.range() requires a group: add `fn Monoid.inv()` to the monoid";
+	$endif
+}
+
+// a[i] = v, monoid needs to be a group
+macro void FenwickTree.set(&self, sz i, Monoid v)
+{
+	$if $defined((Monoid) { }.inv()):
+		Monoid cur = self.range(i, i + 1);
+		self.add(i, v.op(cur.inv()));
+	$else
+		$error "fenwick.set() requires a group: add `fn Monoid.inv()` to the monoid";
+	$endif
 }

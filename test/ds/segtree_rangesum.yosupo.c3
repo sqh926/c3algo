@@ -20,7 +20,7 @@ fn void main()
 	int n = inp.read(int);
 	int q = inp.read(int);
 	Seg st @noinit;
-	st.init(mem, (sz)n, (SumLong) { 0 });
+	st.init(mem, (sz)n);
 	for (int i = 0; i < n; i++)
 	{
 		int x = inp.read(int);
@@ -39,7 +39,7 @@ fn void main()
 		{
 			int l = inp.read(int);
 			int r = inp.read(int);
-			out.writeln(st.exec_on_seg(l, r, 0, 0, st.size).v);
+			out.writeln(st.range(l, r, 0, 0, st.size).v);
 		}
 	}
 }

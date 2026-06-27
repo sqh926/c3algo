@@ -45,6 +45,10 @@ fn ulong ModInt.val(&self) @inline @nodiscard
 	return self.x;
 }
 
+
+fn ModInt ModInt.zero(self) @inline => from(0);
+fn ModInt ModInt.one(self) @inline => from(1);
+
 fn $Typeof(MOD) ModInt.mod(&self) @inline @nodiscard
 {
 	return MOD;

@@ -31,7 +31,7 @@ fn void main()
 	int q = inp.read(int);
 
 	Seg st @noinit;
-	st.init(mem, (sz)n, affine(1, 0));
+	st.init(mem, (sz)n);
 	for (int i = 0; i < n; i++)
 	{
 		long a = inp.read(long);
@@ -54,7 +54,7 @@ fn void main()
 			int l    = inp.read(int);
 			int r    = inp.read(int);
 			long x   = inp.read(long);
-			Aff f    = st.exec_on_seg(l, r, 0, 0, st.size);
+			Aff f    = st.range(l, r, 0, 0, st.size);
 			Mint res = f.a * x;
 			res += f.b;
 			out.writeln(res.val());
