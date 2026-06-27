@@ -1,0 +1,67 @@
+<!-- highlight.js has no C3 grammar; AI GENERATED -->
+<script>
+window.addEventListener('DOMContentLoaded', function () {
+  if (!window.hljs) return;
+
+  hljs.registerLanguage('c3', function (hljs) {
+    var KEYWORDS = {
+      $pattern: /[A-Za-z_$][A-Za-z0-9_]*/,
+      keyword: [
+        'alias', 'asm', 'assert', 'attrdef', 'bitstruct', 'break', 'case', 'catch',
+        'const', 'constdef', 'continue', 'default', 'defer', 'do', 'else', 'enum',
+        'extern', 'faultdef', 'fn', 'for', 'foreach', 'foreach_r', 'if', 'import',
+        'inline', 'interface', 'lengthof', 'macro', 'module', 'nextcase', 'return',
+        'static', 'struct', 'switch', 'tlocal', 'try', 'typedef', 'union', 'var', 'while',
+        '$assert', '$case', '$default', '$defined', '$echo', '$else', '$embed', '$endfor',
+        '$endforeach', '$endif', '$endswitch', '$eval', '$error', '$exec', '$expand',
+        '$feature', '$for', '$foreach', '$if', '$include', '$reflect', '$stringify',
+        '$switch', '$Typefrom', '$Typeof', '$vaarg'
+      ],
+      literal: ['true', 'false', 'null'],
+      type: [
+        'void', 'bool', 'char', 'ichar', 'short', 'ushort', 'int', 'uint', 'long',
+        'ulong', 'int128', 'uint128', 'iptr', 'uptr', 'isz', 'usz', 'float', 'double',
+        'float16', 'bfloat16', 'float128', 'any', 'anyfault', 'typeid'
+      ]
+    };
+
+    return {
+      name: 'C3',
+      aliases: ['c3i', 'c3t'],
+      keywords: KEYWORDS,
+      contains: [
+        hljs.C_LINE_COMMENT_MODE,
+        hljs.C_BLOCK_COMMENT_MODE,
+        hljs.COMMENT('<\\*', '\\*>', { contains: [{ className: 'doctag', begin: /@\w+/ }] }),
+        hljs.QUOTE_STRING_MODE,
+        { className: 'string', begin: '`', end: '`' },
+        { className: 'string', begin: /'/, end: /'/, contains: [hljs.BACKSLASH_ESCAPE] },
+        hljs.C_NUMBER_MODE,
+        // function definitions and calls (incl. methods): identifier before "(",
+        // excluding keywords that may also be followed by "("
+        {
+          className: 'title.function',
+          begin: /(?<!\$)\b(?!(?:if|for|foreach|foreach_r|while|switch|catch|return|defer|do|assert|lengthof|case|nextcase|else|try)\b)[A-Za-z_]\w*(?=\s*\()/,
+          relevance: 0
+        },
+        // module path segments: identifier before "::"
+        { className: 'built_in', begin: /\b[A-Za-z_]\w*(?=::)/, relevance: 0 },
+        // member access: identifier after "."
+        { className: 'property', begin: /(?<=\.)[A-Za-z_]\w*/, relevance: 0 },
+        // attributes
+        { className: 'meta', begin: /@[A-Za-z_]\w*/ },
+        // types: CamelCase identifiers
+        { className: 'title.class', begin: /\b[A-Z]\w*[a-z]\w*\b/, relevance: 0 },
+        // constants: ALL_CAPS identifiers
+        { className: 'variable.constant', begin: /\b[A-Z][A-Z0-9_]+\b/, relevance: 0 }
+      ]
+    };
+  });
+
+  document.querySelectorAll('code.language-c3').forEach(function (el) {
+    el.removeAttribute('data-highlighted');
+    el.classList.add('language-c3');
+    hljs.highlightElement(el);
+  });
+});
+</script>
