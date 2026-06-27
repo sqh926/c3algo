@@ -10,6 +10,7 @@ flags = os.getenv("C3FLAGS", "-O3")
 mod_re = re.compile(r"^\s*module\s+([\w:]+)", re.M)
 imp_re = re.compile(r"^\s*import\s+([^;]+);", re.M)
 problem_re = re.compile(r"PROBLEM:?\s*(https?://\S+)", re.I)
+title_re = re.compile(r"^\s*//[/!]?\s*@(?:brief|title)\s+(.+?)\s*$", re.M | re.I)
 
 text = {s: (root / s).read_text() for s in srcs}
 mod2src = {}
@@ -26,9 +27,13 @@ def deps(body, self=None):
                 out.add(s)
     return sorted(out)
 
+def title_of(body, default):
+    m = title_re.search(body)
+    return m.group(1) if m else default
+
 files = {}
 for s in srcs:
-    title = next(iter(mod_re.findall(text[s])), s)
+    title = title_of(text[s], next(iter(mod_re.findall(text[s])), s))
     files[s] = {
         "dependencies": deps(text[s], s),
         "document_attributes": {"TITLE": title},
@@ -52,7 +57,7 @@ for t in sorted(root.glob("test/**/*.yosupo.c3")):
             "compile": f"mkdir -p build && c3c compile {rel} {' '.join(srcs)} {flags} -o {bin}",
             "command": f"./{bin}",
         }],
-        "document_attributes": {"PROBLEM": url, "TITLE": name},
+        "document_attributes": {"PROBLEM": url, "TITLE": title_of(body, name)},
     }
 
 out = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("verify_files.json")

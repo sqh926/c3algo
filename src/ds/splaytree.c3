@@ -1,3 +1,4 @@
+// @title Splay Tree
 module c3algo::ds::splaytree;
 import std::core::mem;
 

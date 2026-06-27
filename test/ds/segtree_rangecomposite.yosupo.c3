@@ -1,3 +1,4 @@
+// @title Point Set Range Composite
 // PROBLEM: https://judge.yosupo.jp/problem/point_set_range_composite
 
 import c3algo::ds::segtree;

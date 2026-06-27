@@ -1,3 +1,4 @@
+// @title Primality Test
 // PROBLEM: https://judge.yosupo.jp/problem/primality_test
 
 import c3algo::io;

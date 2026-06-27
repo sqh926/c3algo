@@ -1,3 +1,4 @@
+// @title Monoids
 module c3algo::algebra <Elem>;
 
 import c3algo::util::math;

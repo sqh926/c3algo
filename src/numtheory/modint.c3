@@ -1,3 +1,4 @@
+// @title Modular Integer
 <*
  @require MOD > 0 : "Modulo must be greater than 0"
  @require types::is_int($Typeof(MOD)) : "Modulo must be an integer type"

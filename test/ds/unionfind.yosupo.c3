@@ -1,3 +1,4 @@
+// @title Union Find
 // PROBLEM: https://judge.yosupo.jp/problem/unionfind
 
 import std::io;

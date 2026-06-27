@@ -1,3 +1,4 @@
+// @title Treap
 module c3algo::ds::treap;
 import std::core::mem;
 

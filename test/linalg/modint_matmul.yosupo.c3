@@ -1,3 +1,4 @@
+// @title Matrix Product
 // PROBLEM: https://judge.yosupo.jp/problem/matrix_product
 
 import c3algo::io;

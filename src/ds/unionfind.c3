@@ -1,3 +1,4 @@
+// @title Union-Find
 module c3algo::ds::unionfind;
 
 struct UnionFind

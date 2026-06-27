@@ -1,3 +1,4 @@
+// @title Vertex Add Path Sum
 // PROBLEM: https://judge.yosupo.jp/problem/dynamic_tree_vertex_add_path_sum
 
 import c3algo::io;

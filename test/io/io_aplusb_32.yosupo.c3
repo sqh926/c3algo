@@ -1,3 +1,4 @@
+// @title A + B
 // PROBLEM: https://judge.yosupo.jp/problem/aplusb
 
 import c3algo::io;

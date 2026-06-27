@@ -1,3 +1,4 @@
+// @title Fast I/O
 module c3algo::io;
 import std::core::mem;
 import std::core::types;

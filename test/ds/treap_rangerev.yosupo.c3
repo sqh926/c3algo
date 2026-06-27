@@ -1,3 +1,4 @@
+// @title Range Reverse Range Sum
 // PROBLEM: https://judge.yosupo.jp/problem/range_reverse_range_sum
 
 import c3algo::ds::treap;

@@ -1,3 +1,4 @@
+// @title Link-Cut Tree
 module c3algo::ds::linkcuttree;
 import std::core::mem;
 

@@ -1,3 +1,4 @@
+// @title Bitset
 <*
  @require SIZE > 0 : "The size of the bitset in bits must be at least 1"
  @require SIZE / (uint::size * 8) < uint::max

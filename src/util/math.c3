@@ -1,3 +1,4 @@
+// @title Math
 module c3algo::util::math;
 
 import std::math;

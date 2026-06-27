@@ -1,3 +1,4 @@
+// @title Fenwick Tree
 module c3algo::ds::fenwick;
 
 import std::collections::list;

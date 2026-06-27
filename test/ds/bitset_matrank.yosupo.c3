@@ -1,3 +1,4 @@
+// @title Matrix Det (Mod 2)
 // PROBLEM: https://judge.yosupo.jp/problem/matrix_det_mod_2
 
 import std::io;

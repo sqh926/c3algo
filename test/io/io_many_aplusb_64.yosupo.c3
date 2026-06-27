@@ -1,3 +1,4 @@
+// @title Many A + B
 // PROBLEM: https://judge.yosupo.jp/problem/many_aplusb
 
 import c3algo::io;

@@ -1,3 +1,4 @@
+// @title Point Add Range Sum (Fenwick Tree)
 // PROBLEM: https://judge.yosupo.jp/problem/point_add_range_sum
 
 import c3algo::io;

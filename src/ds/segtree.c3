@@ -1,3 +1,4 @@
+// @title Segment Tree
 module c3algo::ds::segtree <Monoid>;
 
 import std::collections::list;
