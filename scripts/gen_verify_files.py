@@ -7,7 +7,7 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parent.parent
 srcs = sorted(str(p.relative_to(root)) for p in root.glob("src/**/*.c3"))
-flags = os.getenv("C3FLAGS", "-O3 --x86cpu=native")
+flags = os.getenv("C3FLAGS", "-O3")
 problem = re.compile(r"PROBLEM:?\s*(https?://\S+)", re.I)
 
 files = {}
