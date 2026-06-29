@@ -1,204 +1,247 @@
-// @title Splay Tree
-module c3algo::ds::splaytree;
-import std::core::mem;
+// @title Implicit Splay Tree
+<*
+ @require concept::@is_monoid(Monoid)
+ @require concept::@is_action(Action, Monoid)
+*>
+module c3algo::ds::splaytree <Monoid, Action>;
+import c3algo::algebra::concept;
+
+const int L = 0;
+const int R = 1;
 
 struct Node
 {
-	int key;
-	sz cnt;
+	Monoid val;
+	Monoid agg;
+	Action lazy;
+	bool rev;
+	sz size;
 	Node* parent;
-	Node* left;
-	Node* right;
+	Node*[2] child;
 }
-
 alias SplayTree = Node*;
 
-fn SplayTree new_node(int key)
+fn SplayTree new_node(Monoid v)
 {
 	Node* n = mem::new(Node);
-	n.key = key;
-	n.cnt = 1;
+	n.val = v;
+	n.agg = v;
+	n.lazy = ((Action) { }).e();
+	n.size = 1;
 	return n;
 }
 
-fn sz Node.size(&self) @inline
+fn sz safe_size(SplayTree t) @inline => t ? t.size : 0;
+fn Monoid safe_agg(SplayTree t) @inline => t ? t.agg : ((Monoid) { }).e();
+
+fn void apply(SplayTree t, Action f) @inline
 {
-	return self ? self.cnt : 0;
+	t.val = f.act(t.val);
+	t.agg = f.act(t.agg);
+	t.lazy = t.lazy.op(f);
 }
 
-fn void Node.pull(&self) @inline
+fn void pull(SplayTree t)
 {
-	self.cnt = self.left.size() + self.right.size() + 1;
+	t.agg = safe_agg(t.child[L]).op(t.val).op(safe_agg(t.child[R]));
+	t.size = 1 + safe_size(t.child[L]) + safe_size(t.child[R]);
 }
 
-fn void Node.rotate_right(&self)
+fn void push(SplayTree t)
 {
-	Node* b = self.left;
-	Node* g = self.parent;
-	self.left = b.right;
-	if (b.right) b.right.parent = self;
-	b.right = self;
-	self.parent = b;
-	b.parent = g;
+	if (t.rev)
+	{
+		@swap(t.child[L], t.child[R]);
+		if (t.child[L]) t.child[L].rev ^= true;
+		if (t.child[R]) t.child[R].rev ^= true;
+		t.rev = false;
+	}
+	if (t.child[L]) apply(t.child[L], t.lazy);
+	if (t.child[R]) apply(t.child[R], t.lazy);
+	t.lazy = ((Action) { }).e();
+}
+
+fn void rotate(SplayTree x)
+{
+	Node* p = x.parent;
+	Node* g = p.parent;
+	int dir = p.child[R] == x ? R : L;
+	int opp = dir ^ 1;
+	p.child[dir] = x.child[opp];
+	if (x.child[opp]) x.child[opp].parent = p;
+	x.child[opp] = p;
+	p.parent = x;
+	x.parent = g;
 	if (g)
 	{
-		if (g.left == self) { g.left = b; } else { g.right = b; }
+		if (g.child[L] == p)
+		{
+			g.child[L] = x;
+		}
+		else
+		{
+			g.child[R] = x;
+		}
 	}
-	self.pull();
-	b.pull();
+	pull(p);
+	pull(x);
 }
 
-fn void Node.rotate_left(&self)
+fn void splay(SplayTree x)
 {
-	Node* b = self.right;
-	Node* g = self.parent;
-	self.right = b.left;
-	if (b.left) b.left.parent = self;
-	b.left = self;
-	self.parent = b;
-	b.parent = g;
-	if (g)
+	while (x.parent)
 	{
-		if (g.left == self) { g.left = b; } else { g.right = b; }
-	}
-	self.pull();
-	b.pull();
-}
-
-fn void Node.rotate_up(&self) @inline
-{
-	if (self.parent.left == self) { self.parent.rotate_right(); }
-	else { self.parent.rotate_left(); }
-}
-
-fn void Node.splay(&self)
-{
-	while (self.parent)
-	{
-		Node* p = self.parent;
+		Node* p = x.parent;
 		if (p.parent)
 		{
-			bool same = (p.left == self) == (p.parent.left == p);
-			if (same) { p.rotate_up(); }
-			else { self.rotate_up(); }
+			bool same = (p.parent.child[L] == p) == (p.child[L] == x);
+			if (same)
+			{
+				rotate(p);
+			}
+			else
+			{
+				rotate(x);
+			}
 		}
-		self.rotate_up();
+		rotate(x);
 	}
 }
 
-fn void splay_nearest(SplayTree* t, int key) @local
+fn SplayTree kth_node(SplayTree t, sz k)
 {
-	Node* cur = *t;
-	if (!cur) return;
-	while (cur.key != key)
+	while (t)
 	{
-		Node* nxt = key < cur.key ? cur.left : cur.right;
-		if (!nxt) break;
-		cur = nxt;
+		push(t);
+		sz ls = safe_size(t.child[L]);
+		if (k == ls) return t;
+		if (k < ls)
+		{
+			t = t.child[L];
+		}
+		else
+		{
+			k -= ls + 1;
+			t = t.child[R];
+		}
 	}
-	cur.splay();
-	*t = cur;
+	return null;
 }
 
-fn bool contains(SplayTree* t, int key)
+fn void split(SplayTree t, sz k, SplayTree* a, SplayTree* b)
 {
-	splay_nearest(t, key);
-	return *t != null && (*t).key == key;
-}
-
-fn void insert(SplayTree* t, int key)
-{
-	if (!*t) { *t = new_node(key); return; }
-	splay_nearest(t, key);
-	Node* r = *t;
-	if (r.key == key) return;
-	Node* n = new_node(key);
-	if (key < r.key)
+	if (k == 0)
 	{
-		n.left = r.left;
-		if (r.left) r.left.parent = n;
-		r.left = null;
-		n.right = r;
+		*a = null;
+		*b = t;
+		return;
 	}
-	else
+	if (k >= safe_size(t))
 	{
-		n.right = r.right;
-		if (r.right) r.right.parent = n;
-		r.right = null;
-		n.left = r;
+		*a = t;
+		*b = null;
+		return;
 	}
-	r.parent = n;
-	r.pull();
-	n.pull();
-	*t = n;
+	SplayTree x = kth_node(t, k - 1);
+	splay(x);
+	SplayTree right = x.child[R];
+	x.child[R] = null;
+	if (right) right.parent = null;
+	pull(x);
+	*a = x;
+	*b = right;
 }
 
-fn void erase(SplayTree* t, int key)
+fn void merge(SplayTree* t, SplayTree a, SplayTree b)
 {
-	splay_nearest(t, key);
-	Node* r = *t;
-	if (!r || r.key != key) return;
-	Node* l = r.left;
-	Node* rr = r.right;
-	if (l) l.parent = null;
-	if (rr) rr.parent = null;
-	mem::free(r);
-	if (!l) { *t = rr; return; }
-	Node* m = l;
-	while (m.right) m = m.right;
-	m.splay();
-	m.right = rr;
-	if (rr) rr.parent = m;
-	m.pull();
-	*t = m;
-}
-
-<*
- @require (k < (*t).size()) : "kth: index out of range"
-*>
-fn int kth(SplayTree* t, sz k)
-{
-	Node* cur = *t;
-	while (true)
+	if (!a || !b)
 	{
-		sz ls = cur.left.size();
-		if (k == ls) break;
-		if (k < ls) { cur = cur.left; }
-		else { k -= ls + 1; cur = cur.right; }
+		(*t) = a ? a : b;
+		return;
 	}
-	cur.splay();
-	*t = cur;
-	return cur.key;
+	SplayTree x = a;
+	push(x);
+	while (x.child[R])
+	{
+		x = x.child[R];
+		push(x);
+	}
+	splay(x);
+	x.child[R] = b;
+	b.parent = x;
+	pull(x);
+	*t = x;
 }
 
-fn sz count_leq(SplayTree* t, int x)
+fn void push_back(SplayTree* t, Monoid v)
 {
-	splay_nearest(t, x);
-	Node* r = *t;
-	if (!r) return 0;
-	return r.key <= x ? r.left.size() + 1 : r.left.size();
+	merge(t, *t, new_node(v));
 }
 
-fn int floor(SplayTree* t, int x)
+fn void insert(SplayTree* t, sz pos, Monoid v)
 {
-	splay_nearest(t, x);
-	Node* r = *t;
-	if (!r) return -1;
-	if (r.key <= x) return r.key;
-	Node* p = r.left;
-	if (!p) return -1;
-	while (p.right) p = p.right;
-	return p.key;
+	SplayTree a;
+	SplayTree b;
+	split(*t, pos, &a, &b);
+	merge(t, a, new_node(v));
+	merge(t, *t, b);
 }
 
-fn int ceil(SplayTree* t, int x)
+fn void erase(SplayTree* t, sz pos)
 {
-	splay_nearest(t, x);
-	Node* r = *t;
-	if (!r) return -1;
-	if (r.key >= x) return r.key;
-	Node* s = r.right;
-	if (!s) return -1;
-	while (s.left) s = s.left;
-	return s.key;
+	SplayTree a;
+	SplayTree m;
+	SplayTree b;
+	split(*t, pos, &a, &b);
+	split(b, 1, &m, &b);
+	if (m) mem::free(m);
+	merge(t, a, b);
+}
+
+fn Monoid range(SplayTree* t, sz l, sz r)
+{
+	SplayTree a;
+	SplayTree b;
+	SplayTree c;
+	split(*t, l, &a, &b);
+	split(b, r - l, &b, &c);
+	Monoid res = safe_agg(b);
+	merge(t, a, b);
+	merge(t, *t, c);
+	return res;
+}
+
+fn void update(SplayTree* t, sz l, sz r, Action f)
+{
+	SplayTree a;
+	SplayTree b;
+	SplayTree c;
+	split(*t, l, &a, &b);
+	split(b, r - l, &b, &c);
+	if (b) apply(b, f);
+	merge(t, a, b);
+	merge(t, *t, c);
+}
+
+fn void reverse(SplayTree* t, sz l, sz r)
+{
+	SplayTree a;
+	SplayTree b;
+	SplayTree c;
+	split(*t, l, &a, &b);
+	split(b, r - l, &b, &c);
+	if (b) b.rev = !b.rev;
+	merge(t, a, b);
+	merge(t, *t, c);
+}
+
+fn SplayTree kth(SplayTree* t, sz k)
+{
+	SplayTree x = kth_node(*t, k);
+	if (x)
+	{
+		splay(x);
+		*t = x;
+	}
+	return x;
 }

@@ -62,7 +62,7 @@ fn void apply(ImplicitTreap t, Action f) @inline
 	t.lazy = t.lazy.op(f);
 }
 
-fn void pull(ImplicitTreap t)
+fn void pull(ImplicitTreap t) @inline
 {
 	t.agg = safe_agg(t.child[L]).op(t.val).op(safe_agg(t.child[R]));
 	t.size = 1 + safe_size(t.child[L]) + safe_size(t.child[R]);
@@ -125,10 +125,9 @@ fn void split(ImplicitTreap t, sz k, ImplicitTreap* l, ImplicitTreap* r)
 	pull(t);
 }
 
-fn void push_back(ImplicitTreap* t, Monoid v)
+fn void push_back(ImplicitTreap* t, Monoid v) @inline
 {
-	ImplicitTreap nd = new_node(v);
-	merge(t, *t, nd);
+	merge(t, *t, new_node(v));
 }
 
 fn void insert(ImplicitTreap* t, sz at, Monoid v)
@@ -136,8 +135,7 @@ fn void insert(ImplicitTreap* t, sz at, Monoid v)
 	ImplicitTreap l;
 	ImplicitTreap r;
 	split(*t, at, &l, &r);
-	ImplicitTreap m = new_node(v);
-	merge(t, l, m);
+	merge(t, l, new_node(v));
 	merge(t, *t, r);
 }
 
