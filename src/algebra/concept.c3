@@ -36,3 +36,5 @@ macro bool @is_field($Type) @const => @is_ring($Type) && $defined((($Type) { }).
 
 // Action on monoid
 macro bool @is_action($Act, $Mono) @const => @is_monoid($Act) && $defined((($Act) { }).act((($Mono) { })));
+
+macro bool @is_ordered($Type) @const => $defined((($Type) { }) < (($Type) { }));
