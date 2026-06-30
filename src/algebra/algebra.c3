@@ -56,6 +56,14 @@ fn Gcd Gcd.op(self, Gcd o) @inline
 fn Gcd Gcd.e(self) @inline => (Gcd) { };
 
 
+struct Empty
+{
+	char unused;
+}
+fn Sum Empty.act(self, Sum m) @inline => m;
+fn Empty Empty.op(self, Empty o) @inline => self;
+fn Empty Empty.e(self) @inline => (Empty) { };
+
 <*
  @require concept::@is_ring(Elem) : "Affine requires Elem to be a Ring (needs zero(), one())"
 *>

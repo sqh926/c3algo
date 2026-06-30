@@ -1,153 +1,46 @@
 // @title Link-Cut Tree
-module c3algo::ds::linkcuttree;
-import std::core::mem;
+<*
+ @require concept::@is_monoid(Monoid)
+ @require concept::@is_action(Action, Monoid)
+*>
+module c3algo::ds::lctree <Monoid, Action>;
+import c3algo::ds::splaytree;
+import c3algo::algebra::concept;
 
-struct Node
+const int L = 0;
+const int R = 1;
+
+alias Node = splaytree::Node{Monoid, Action};
+alias new_node = splaytree::new_node{Monoid, Action};
+alias is_root = splaytree::is_root{Monoid, Action};
+alias splay = splaytree::splay{Monoid, Action};
+alias push = splaytree::push{Monoid, Action};
+alias pull = splaytree::pull{Monoid, Action};
+alias apply = splaytree::apply{Monoid, Action};
+
+fn void push_down(Node* x)
 {
-	long val;
-	long sum;
-	Node* left;
-	Node* right;
-	Node* parent;
-	bool rev;
+	if (!is_root(x)) push_down(x.parent);
+	push(x);
 }
 
-alias LinkCutTree = Node*;
-
-fn LinkCutTree new_node(long val)
+fn void splay_push(Node* x)
 {
-	Node* n = mem::new(Node);
-	n.val = val;
-	n.sum = val;
-	return n;
+	push_down(x);
+	splay(x);
 }
-
-fn long Node.subsum(&self) @inline
-{
-	return self ? self.sum : 0;
-}
-
-fn void Node.pull(&self) @inline
-{
-	self.sum = self.left.subsum() + self.val + self.right.subsum();
-}
-
-fn void Node.push(&self) @inline
-{
-	if (self.rev)
-	{
-		self.rev = false;
-		@swap(self.left, self.right);
-		if (self.left) self.left.rev ^= true;
-		if (self.right) self.right.rev ^= true;
-	}
-}
-
-fn bool Node.is_root(&self) @inline
-{
-	return self.parent == null || (self.parent.left != self && self.parent.right != self);
-}
-
-fn void Node.rotate_right(&self)
-{
-	Node* b = self.left;
-	Node* g = self.parent;
-	self.left = b.right;
-	if (b.right) b.right.parent = self;
-	b.right = self;
-	self.parent = b;
-	b.parent = g;
-	if (g)
-	{
-		if (g.left == self)
-		{
-			g.left = b;
-		}
-		else if (g.right == self)
-		{
-			g.right = b;
-		}
-	}
-	self.pull();
-	b.pull();
-}
-
-fn void Node.rotate_left(&self)
-{
-	Node* b = self.right;
-	Node* g = self.parent;
-	self.right = b.left;
-	if (b.left) b.left.parent = self;
-	b.left = self;
-	self.parent = b;
-	b.parent = g;
-	if (g)
-	{
-		if (g.left == self)
-		{
-			g.left = b;
-		}
-		else if (g.right == self)
-		{
-			g.right = b;
-		}
-	}
-	self.pull();
-	b.pull();
-}
-
-fn void Node.rotate_up(&self) @inline
-{
-	if (self.parent.left == self)
-	{
-		self.parent.rotate_right();
-	}
-	else
-	{
-		self.parent.rotate_left();
-	}
-}
-
-fn void Node.push_down(&self)
-{
-	if (!self.is_root()) self.parent.push_down();
-	self.push();
-}
-
-fn void Node.splay(&self)
-{
-	self.push_down();
-	while (!self.is_root())
-	{
-		Node* p = self.parent;
-		if (!p.is_root())
-		{
-			bool same = (p.left == self) == (p.parent.left == p);
-			if (same)
-			{
-				p.rotate_up();
-			}
-			else
-			{
-				self.rotate_up();
-			}
-		}
-		self.rotate_up();
-	}
-}
-
 fn void expose(Node* v)
 {
-	v.splay();
-	v.right = null;
-	v.pull();
+	splay_push(v);
+	v.child[R] = null;
+	pull(v);
 	while (v.parent)
 	{
 		Node* w = v.parent;
-		w.splay();
-		w.right = v;
-		w.pull();
-		v.splay();
+		splay_push(w);
+		w.child[R] = v;
+		pull(w);
+		splay_push(v);
 	}
 }
 
@@ -155,7 +48,7 @@ fn void evert(Node* v)
 {
 	expose(v);
 	v.rev ^= true;
-	v.push();
+	push(v);
 }
 
 fn void link(Node* u, Node* v)
@@ -168,38 +61,43 @@ fn void cut(Node* u, Node* v)
 {
 	evert(u);
 	expose(v);
-	v.left.parent = null;
-	v.left = null;
-	v.pull();
+	v.child[L].parent = null;
+	v.child[L] = null;
+	pull(v);
 }
 
 fn Node* find_root(Node* v)
 {
 	expose(v);
-	while (v.left)
+	while (v.child[L])
 	{
-		v = v.left;
-		v.push();
+		v = v.child[L];
+		push(v);
 	}
-	v.splay();
+	splay(v);
 	return v;
 }
 
-fn bool connected(Node* u, Node* v)
-{
-	return find_root(u) == find_root(v);
-}
 
-fn void add(Node* v, long x)
-{
-	v.splay();
-	v.val += x;
-	v.pull();
-}
+fn bool connected(Node* u, Node* v) => find_root(u) == find_root(v);
 
-fn long path_sum(Node* u, Node* v)
+fn Monoid path_query(Node* u, Node* v)
 {
 	evert(u);
 	expose(v);
-	return v.sum;
+	return v.agg;
+}
+
+fn void apply_path(Node* u, Node* v, Action f)
+{
+	evert(u);
+	expose(v);
+	apply(v, f);
+}
+
+fn void point_set(Node* v, Monoid m)
+{
+	splay_push(v);
+	v.val = m;
+	pull(v);
 }

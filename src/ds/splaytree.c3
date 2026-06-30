@@ -61,6 +61,11 @@ fn void push(SplayTree t)
 	t.lazy = ((Action) { }).e();
 }
 
+fn bool is_root(SplayTree x) @inline
+{
+	return x.parent == null || (x.parent.child[L] != x && x.parent.child[R] != x);
+}
+
 fn void rotate(SplayTree x)
 {
 	Node* p = x.parent;
@@ -78,7 +83,7 @@ fn void rotate(SplayTree x)
 		{
 			g.child[L] = x;
 		}
-		else
+		else if (g.child[R] == p)
 		{
 			g.child[R] = x;
 		}
@@ -89,10 +94,10 @@ fn void rotate(SplayTree x)
 
 fn void splay(SplayTree x)
 {
-	while (x.parent)
+	while (!is_root(x))
 	{
 		Node* p = x.parent;
-		if (p.parent)
+		if (!is_root(p))
 		{
 			bool same = (p.parent.child[L] == p) == (p.child[L] == x);
 			if (same)
