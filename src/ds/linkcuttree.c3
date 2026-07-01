@@ -17,6 +17,7 @@ alias splay = splaytree::splay{Monoid, Action};
 alias push = splaytree::push{Monoid, Action};
 alias pull = splaytree::pull{Monoid, Action};
 alias apply = splaytree::apply{Monoid, Action};
+alias apply_rev = splaytree::apply_rev{Monoid, Action};
 
 fn void push_down(Node* x)
 {
@@ -47,7 +48,7 @@ fn void expose(Node* v)
 fn void evert(Node* v)
 {
 	expose(v);
-	v.rev ^= true;
+	apply_rev(v);
 	push(v);
 }
 

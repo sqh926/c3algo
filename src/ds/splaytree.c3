@@ -13,6 +13,7 @@ struct Node
 {
 	Monoid val;
 	Monoid agg;
+	Monoid ragg;
 	Action lazy;
 	bool rev;
 	sz size;
@@ -26,6 +27,7 @@ fn SplayTree new_node(Monoid v)
 	Node* n = mem::new(Node);
 	n.val = v;
 	n.agg = v;
+	n.ragg = v;
 	n.lazy = ((Action) { }).e();
 	n.size = 1;
 	return n;
@@ -33,17 +35,26 @@ fn SplayTree new_node(Monoid v)
 
 fn sz safe_size(SplayTree t) @inline => t ? t.size : 0;
 fn Monoid safe_agg(SplayTree t) @inline => t ? t.agg : ((Monoid) { }).e();
+fn Monoid safe_ragg(SplayTree t) @inline => t ? t.ragg : ((Monoid) { }).e();
 
 fn void apply(SplayTree t, Action f) @inline
 {
 	t.val = f.act(t.val);
 	t.agg = f.act(t.agg);
+	t.ragg = f.act(t.ragg);
 	t.lazy = t.lazy.op(f);
+}
+
+fn void apply_rev(SplayTree t) @inline
+{
+	@swap(t.agg, t.ragg);
+	t.rev ^= true;
 }
 
 fn void pull(SplayTree t)
 {
 	t.agg = safe_agg(t.child[L]).op(t.val).op(safe_agg(t.child[R]));
+	t.ragg = safe_ragg(t.child[R]).op(t.val).op(safe_ragg(t.child[L]));
 	t.size = 1 + safe_size(t.child[L]) + safe_size(t.child[R]);
 }
 
@@ -52,8 +63,8 @@ fn void push(SplayTree t)
 	if (t.rev)
 	{
 		@swap(t.child[L], t.child[R]);
-		if (t.child[L]) t.child[L].rev ^= true;
-		if (t.child[R]) t.child[R].rev ^= true;
+		if (t.child[L]) apply_rev(t.child[L]);
+		if (t.child[R]) apply_rev(t.child[R]);
 		t.rev = false;
 	}
 	if (t.child[L]) apply(t.child[L], t.lazy);
@@ -235,7 +246,7 @@ fn void reverse(SplayTree* t, sz l, sz r)
 	SplayTree c;
 	split(*t, l, &a, &b);
 	split(b, r - l, &b, &c);
-	if (b) b.rev = !b.rev;
+	if (b) apply_rev(b);
 	merge(t, a, b);
 	merge(t, *t, c);
 }

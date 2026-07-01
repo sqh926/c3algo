@@ -60,7 +60,7 @@ struct Empty
 {
 	char unused;
 }
-fn Sum Empty.act(self, Sum m) @inline => m;
+macro Empty.act(self, m) => m;
 fn Empty Empty.op(self, Empty o) @inline => self;
 fn Empty Empty.e(self) @inline => (Empty) { };
 
@@ -88,6 +88,7 @@ fn Affine Affine.e(self) @inline
 	Elem t;
 	return (Affine) { t.one(), t.zero() };
 }
+
 
 struct SumLen
 {
