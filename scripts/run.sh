@@ -42,7 +42,18 @@ one() {
     fi
 
     local rc slowest mark
-    out=$("$oj" test -c "$bin" -d "$cases/test" 2>&1); rc=$?
+    local -a judge=()
+    local lcp="$HOME/.cache/online-judge-tools/library-checker-problems"
+    local probdir; probdir=$(find "$lcp" -maxdepth 2 -type d -name "$slug" 2>/dev/null | head -1)
+    if [ -n "$probdir" ] && [ -f "$probdir/checker.cpp" ]; then
+        local chk="$root/build/checker_$slug"
+        if [ ! -x "$chk" ] || [ "$probdir/checker.cpp" -nt "$chk" ]; then
+            g++ -O2 -I "$lcp/common" -I "$probdir" -o "$chk" "$probdir/checker.cpp" 2>/dev/null || true
+        fi
+        [ -x "$chk" ] && judge=(--judge-command "$chk")
+    fi
+
+    out=$("$oj" test -c "$bin" -d "$cases/test" ${judge[@]+"${judge[@]}"} 2>&1); rc=$?
     [ "$verbose" = 1 ] && printf '%s\n' "$out" >&2
 
     slowest=$(printf '%s\n' "$out" | grep -oiE 'slowest:[[:space:]]*[0-9.]+' | grep -oE '[0-9.]+' | tail -1)
