@@ -2,7 +2,7 @@
 // PROBLEM: https://judge.yosupo.jp/problem/primality_test
 
 import c3algo::io;
-import c3algo::util::math;
+import c3algo::numtheory::primality;
 
 
 fn void main()
@@ -18,6 +18,6 @@ fn void main()
 	while (t-- > 0)
 	{
 		ulong n = inp.read(ulong);
-		out.writeln((math::is_prime(n) ? "Yes" : "No"));
+		out.writeln((primality::is_prime(n) ? "Yes" : "No"));
 	}
 }
