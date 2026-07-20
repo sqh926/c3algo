@@ -22,9 +22,9 @@ fn int128 int128.one(self) @inline => 1;
 fn uint128 uint128.zero(self) @inline => 0;
 fn uint128 uint128.one(self) @inline => 1;
 
-macro bool @is_monoid($Type) @const => $defined((($Type) { }).op((($Type) { }))) && $defined((($Type) { }).e());
+macro bool @is_monoid($Type) @const => $defined((($Type) { }).op((($Type) { }))) && @has_identity($Type);
 
-macro bool @is_group($Type) @const => @is_monoid($Type) && $defined((($Type) { }).inv());
+macro bool @is_group($Type) @const => @is_monoid($Type) && @has_inverse($Type);
 
 macro bool @is_ring(
 	$Type
@@ -32,7 +32,11 @@ macro bool @is_ring(
 	&& $defined((($Type) { }).zero())
 	&& $defined((($Type) { }).one());
 
-macro bool @is_field($Type) @const => @is_ring($Type) && $defined((($Type) { }).inv());
+macro bool @is_field($Type) @const => @is_ring($Type) && @has_inverse($Type);
+
+macro bool @has_inverse($Type) @const => $defined((($Type) { }).inv());
+
+macro bool @has_identity($Type) @const => $defined((($Type) { }).e());
 
 // Action on monoid
 macro bool @is_action($Act, $Mono) @const => @is_monoid($Act) && $defined((($Act) { }).act((($Mono) { })));
