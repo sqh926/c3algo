@@ -1,17 +1,17 @@
 // @title Primality Test (Miller-Rabin)
 module c3algo::numtheory::primality;
 
-import c3algo::util::math;
+import c3algo::util::bpow;
 
 
 macro miller_test(base, s, d, n)
 {
 	var $Mod = $Typeof(n);
-	$Mod x = math::bpow(base, d, n);
+	$Mod x = bpow::bpow(base, d, n);
 	if (x == 1 || x == n - 1) return false;
 	for (var i = 1; i < s; i++)
 	{
-		x = math::mulmod(x, x, n);
+		x = bpow::mulmod(x, x, n);
 		if (x == n - 1) return false;
 	}
 	return true;

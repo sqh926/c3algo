@@ -1,5 +1,5 @@
 // @title Binary Exponentiation
-module c3algo::util::math;
+module c3algo::util::bpow;
 
 macro mulmod(a, b, m)
 {

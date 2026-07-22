@@ -1,7 +1,7 @@
 // @title Monoids
 module c3algo::algebra <Elem>;
 
-import c3algo::util::math;
+import c3algo::util::gcd;
 import c3algo::algebra::concept;
 
 struct Min
@@ -51,7 +51,7 @@ struct Gcd
 }
 fn Gcd Gcd.op(self, Gcd o) @inline
 {
-	return (Gcd) { math::gcd(self.v, o.v) };
+	return (Gcd) { gcd::gcd(self.v, o.v) };
 }
 fn Gcd Gcd.e(self) @inline => (Gcd) { };
 

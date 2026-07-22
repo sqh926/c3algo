@@ -3,7 +3,7 @@ module c3algo::conv::fft <Real>;
 
 import std::math::complex, std::math, std::time;
 import std::collections::list;
-import c3algo::util::math;
+import c3algo::util::bpow;
 
 alias Ftype = ComplexNumber{Real};
 alias IntList = List{int};
@@ -96,7 +96,7 @@ fn IntList convolution_mod(IntList a, IntList b, int mod)
 	// https://codeforces.com/blog/entry/142860
 	// helps to add randomness to the input
 	int factor   = 1 + (int)(splitmix64((ulong)time::now()) % (ulong)(mod - 1));
-	long ifactor = math::bpow(factor, mod - 2, mod);
+	long ifactor = bpow::bpow(factor, mod - 2, mod);
 
 	Ftype[] fa   = mem::new_array(Ftype, n);
 	Ftype[] fb   = mem::new_array(Ftype, n);

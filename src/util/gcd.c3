@@ -1,5 +1,5 @@
 // @title Fast gcd
-module c3algo::util::math;
+module c3algo::util::gcd;
 
 import std::math;
 
@@ -20,10 +20,11 @@ macro _gcd(a, b)
 	while (x != 0)
 	{
 		x >>= az;
-		$Type diff = y - x;
+		$Type mn   = math::min(x, y);
+		$Type diff = math::max(x, y) - mn;
 		az = diff.ctz();
-		y = math::min(x, y);
-		x = math::abs(diff);
+		y = mn;
+		x = diff;
 	}
 	return y << shift;
 }

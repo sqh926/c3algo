@@ -1,7 +1,8 @@
 // @title Integer Factorization (Pollard's rho)
 module c3algo::numtheory::factorize;
 
-import c3algo::util::math;
+import c3algo::util::gcd;
+import c3algo::util::bpow;
 import c3algo::numtheory::primality;
 import std::collections::list;
 import std::sort;
@@ -23,7 +24,7 @@ fn ulong next_rand() @local
 
 fn ulong f(ulong x, ulong c, ulong n) @local @inline
 {
-	ulong r = math::mulmod(x, x, n) + c;
+	ulong r = bpow::mulmod(x, x, n) + c;
 	if (r >= n) r -= n;
 	return r;
 }
@@ -50,9 +51,9 @@ fn ulong get_divisor(ulong n) @local
 				a = f(a, c, n);
 				b = f(f(b, c, n), c, n);
 				ulong diff = a > b ? a - b : b - a;
-				q = math::mulmod(q, diff, n);
+				q = bpow::mulmod(q, diff, n);
 			}
-			g = math::gcd(q, n);
+			g = gcd::gcd(q, n);
 		}
 
 		if (g == n)
@@ -63,7 +64,7 @@ fn ulong get_divisor(ulong n) @local
 				pa = f(pa, c, n);
 				pb = f(f(pb, c, n), c, n);
 				ulong diff = pa > pb ? pa - pb : pb - pa;
-				g = math::gcd(diff, n);
+				g = gcd::gcd(diff, n);
 			}
 		}
 		if (g != n) return g;
