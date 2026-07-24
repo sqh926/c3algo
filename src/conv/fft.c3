@@ -2,11 +2,9 @@
 module c3algo::conv::fft <Real>;
 
 import std::math::complex, std::math, std::time;
-import std::collections::list;
 import c3algo::util::bpow;
 
 alias Ftype = ComplexNumber{Real};
-alias IntList = List{int};
 
 fn void fft_inplace(Ftype[] in, bool inverse)
 {
@@ -27,7 +25,7 @@ fn void fft_inplace(Ftype[] in, bool inverse)
 		if (i < rev[i]) @swap(in[i], in[rev[i]]);
 	}
 	static Ftype[] w;
-	if (w.len != n)
+	if (w.len != n / 2)
 	{
 		if (w.len != 0) mem::free(w);
 		int half = n / 2;
@@ -66,6 +64,35 @@ fn void fft_inplace(Ftype[] in, bool inverse)
 	}
 }
 
+fn void convolution(long[] dst, long[] a, long[] b, Allocator scratch = mem)
+{
+	int la   = (int)a.len;
+	int lb   = (int)b.len;
+	int save = la + lb - 1;
+	if (save <= 0) return;
+	int n    = 1;
+	while (n < save) n *= 2;
+
+	Ftype[] h = alloc::new_array(scratch, Ftype, n);
+	defer alloc::free(scratch, h);
+	for (int i = 0; i < la; i++) h[i].r = (Real)a[i];
+	for (int i = 0; i < lb; i++) h[i].c = (Real)b[i];
+	fft_inplace(h[..], false);
+
+	Ftype[] c = alloc::new_array(scratch, Ftype, n);
+	defer alloc::free(scratch, c);
+	Ftype m = { .r = 0, .c = -0.25 };
+	for (int k = 0; k < n; k++)
+	{
+		int j    = (n - k) & (n - 1);
+		Ftype hj = h[j].conjugate();
+		c[k] = (h[k] + hj) * (h[k] - hj) * m;
+	}
+	fft_inplace(c[..], true);
+
+	for (int k = 0; k < save; k++) dst[k] = (long)math::round(c[k].r);
+}
+
 fn ulong splitmix64(ulong x) @local
 {
 	x += 0x9E3779B97F4A7C15;
@@ -74,10 +101,11 @@ fn ulong splitmix64(ulong x) @local
 	return x ^ (x >> 31);
 }
 
-fn void load(Ftype[] dst, IntList src, long factor, int mod, long cut) @local
+fn void load(Ftype[] dst, int[] src, long factor, int mod, long cut) @local
 {
-	long f = 1;
-	for (int i = 0; i < src.len(); i++)
+	long f  = 1;
+	int len = (int)src.len;
+	for (int i = 0; i < len; i++)
 	{
 		long v = (long)src[i] * f % mod;
 		dst[i] = { .r = (Real)(v / cut), .c = (Real)(v % cut) };
@@ -85,9 +113,10 @@ fn void load(Ftype[] dst, IntList src, long factor, int mod, long cut) @local
 	}
 }
 
-fn IntList convolution_mod(IntList a, IntList b, int mod)
+fn void convolution_mod(int[] dst, int[] a, int[] b, int mod, Allocator scratch = mem)
 {
-	int save = (int)a.len() + (int)b.len() - 1;
+	int save = (int)a.len + (int)b.len - 1;
+	if (save <= 0) return;
 	int n    = 1;
 	while (n < save) n *= 2;
 
@@ -98,14 +127,14 @@ fn IntList convolution_mod(IntList a, IntList b, int mod)
 	int factor   = 1 + (int)(splitmix64((ulong)time::now()) % (ulong)(mod - 1));
 	long ifactor = bpow::bpow(factor, mod - 2, mod);
 
-	Ftype[] fa   = mem::new_array(Ftype, n);
-	Ftype[] fb   = mem::new_array(Ftype, n);
-	Ftype[] outl = mem::new_array(Ftype, n);
-	Ftype[] outs = mem::new_array(Ftype, n);
-	defer mem::free(fa);
-	defer mem::free(fb);
-	defer mem::free(outl);
-	defer mem::free(outs);
+	Ftype[] fa   = alloc::new_array(scratch, Ftype, n);
+	Ftype[] fb   = alloc::new_array(scratch, Ftype, n);
+	Ftype[] outl = alloc::new_array(scratch, Ftype, n);
+	Ftype[] outs = alloc::new_array(scratch, Ftype, n);
+	defer alloc::free(scratch, fa);
+	defer alloc::free(scratch, fb);
+	defer alloc::free(scratch, outl);
+	defer alloc::free(scratch, outs);
 	load(fa, a, factor, mod, cut);
 	load(fb, b, factor, mod, cut);
 	// it is possible to combine two of those fft's in one
@@ -125,7 +154,6 @@ fn IntList convolution_mod(IntList a, IntList b, int mod)
 	fft_inplace(outl[..], false);
 	fft_inplace(outs[..], false);
 
-	IntList res;
 	long fk = 1;
 	for (int k = 0; k < save; k++)
 	{
@@ -135,7 +163,6 @@ fn IntList convolution_mod(IntList a, IntList b, int mod)
 		long val = ((av % mod * cut + bv) % mod * cut + cv) % mod;
 		val = (val + mod) % mod * fk % mod;
 		fk = fk * ifactor % mod;
-		res.push((int)val);
+		dst[k] = (int)val;
 	}
-	return res;
 }

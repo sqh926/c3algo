@@ -4,11 +4,10 @@ module c3algo::conv::ntt <MOD>;
 import c3algo::numtheory::modint;
 import c3algo::numtheory::factorize;
 import c3algo::util::bpow;
-import std::collections::list;
+import std::core::mem::alloc;
 
 alias Mint = modint::ModInt{MOD};
 alias from = modint::from{MOD};
-alias IntList = List{int};
 
 fn long primitive_root() @local
 {
@@ -62,7 +61,7 @@ fn void ntt_inplace(Mint[] in, bool inverse)
 	if (root == 0) root = primitive_root();
 
 	static Mint[] w;
-	if (w.len != n)
+	if (w.len != n / 2)
 	{
 		if (w.len != 0) mem::free(w);
 		int half = n / 2;
@@ -104,27 +103,27 @@ fn void ntt_inplace(Mint[] in, bool inverse)
 	}
 }
 
-fn IntList convolution(IntList a, IntList b)
+fn void convolution(int[] dst, int[] a, int[] b, Allocator scratch = mem)
 {
-	IntList res;
-	if (a.len() == 0 || b.len() == 0) return res;
+	int na = (int)a.len;
+	int nb = (int)b.len;
+	if (na == 0 || nb == 0) return;
 
-	int save = (int)a.len() + (int)b.len() - 1;
+	int save = na + nb - 1;
 	int n    = 1;
 	while (n < save) n *= 2;
 
-	Mint[] fa = mem::new_array(Mint, n);
-	Mint[] fb = mem::new_array(Mint, n);
-	defer mem::free(fa);
-	defer mem::free(fb);
-	for (int i = 0; i < a.len(); i++) fa[i] = from(a[i]);
-	for (int i = 0; i < b.len(); i++) fb[i] = from(b[i]);
+	Mint[] fa = alloc::new_array(scratch, Mint, n);
+	Mint[] fb = alloc::new_array(scratch, Mint, n);
+	defer alloc::free(scratch, fa);
+	defer alloc::free(scratch, fb);
+	for (int i = 0; i < na; i++) fa[i] = from(a[i]);
+	for (int i = 0; i < nb; i++) fb[i] = from(b[i]);
 
 	ntt_inplace(fa, false);
 	ntt_inplace(fb, false);
 	for (int i = 0; i < n; i++) fa[i] *= fb[i];
 	ntt_inplace(fa, true);
 
-	for (int k = 0; k < save; k++) res.push((int)fa[k].val());
-	return res;
+	for (int k = 0; k < save; k++) dst[k] = (int)fa[k].val();
 }

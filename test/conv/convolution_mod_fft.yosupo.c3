@@ -28,10 +28,11 @@ fn void main()
 	for (int i = 0; i < n; i++) a.push(inp.read(int));
 	for (int i = 0; i < m; i++) b.push(inp.read(int));
 
-	IntList res = convolution_mod(a, b, MOD);
-	for (int i = 0; i < res.len(); i++)
+	int[] res = mem::new_array(int, (sz)(n + m - 1));
+	convolution_mod(res, a.array_view(), b.array_view(), MOD);
+	foreach (v : res)
 	{
-		out.write(res[i]);
+		out.write(v);
 		out.sp();
 	}
 }
