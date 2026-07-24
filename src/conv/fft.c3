@@ -70,7 +70,7 @@ fn void convolution(long[] dst, long[] a, long[] b, Allocator scratch = mem)
 	int lb   = (int)b.len;
 	int save = la + lb - 1;
 	if (save <= 0) return;
-	int n    = 1;
+	int n = 1;
 	while (n < save) n *= 2;
 
 	Ftype[] h = alloc::new_array(scratch, Ftype, n);
@@ -117,7 +117,7 @@ fn void convolution_mod(int[] dst, int[] a, int[] b, int mod, Allocator scratch 
 {
 	int save = (int)a.len + (int)b.len - 1;
 	if (save <= 0) return;
-	int n    = 1;
+	int n = 1;
 	while (n < save) n *= 2;
 
 	long cut = (long)math::ceil(math::sqrt(mod));
