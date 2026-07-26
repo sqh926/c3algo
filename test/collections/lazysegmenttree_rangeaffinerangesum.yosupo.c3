@@ -1,7 +1,7 @@
 // @title Range Affine Range Sum (Lazy Segment Tree)
 // PROBLEM: https://judge.yosupo.jp/problem/range_affine_range_sum
 
-import c3algo::ds::lazyseg;
+import c3algo::collections::lazysegmenttree;
 import c3algo::algebra::affine;
 import c3algo::numbertheory::modint;
 import c3algo::io;
@@ -10,7 +10,7 @@ import std::core::mem;
 alias Mint = ModInt{998244353};
 alias Agg = SumLen{Mint};
 alias Map = Affine{Mint};
-alias Seg = LazySeg{Agg, Map};
+alias Seg = LazySegmentTree{Agg, Map};
 
 fn Map map(long a, long b)
 {

@@ -3,19 +3,19 @@
  @require concept::@is_monoid(Monoid)
  @require concept::@is_action(Action, Monoid)
 *>
-module c3algo::ds::lazyseg <Monoid, Action>;
+module c3algo::collections::lazysegmenttree <Monoid, Action>;
 
 import std::collections::list;
 import c3algo::algebra::concept;
 
-struct LazySeg
+struct LazySegmentTree
 {
 	List{Monoid} tree;
 	List{Action} lazy;
 	sz size;
 }
 
-fn LazySeg* LazySeg.init(&self, Allocator allocator, sz n)
+fn LazySegmentTree* LazySegmentTree.init(&self, Allocator allocator, sz n)
 {
 	self.size = 1;
 	while (self.size < n) self.size *= 2;
@@ -30,14 +30,14 @@ fn LazySeg* LazySeg.init(&self, Allocator allocator, sz n)
 	return self;
 }
 
-fn void LazySeg.free(&self)
+fn void LazySegmentTree.free(&self)
 {
 	self.tree.free();
 	self.lazy.free();
 	*self = { };
 }
 
-fn Monoid LazySeg.get(&self, sz i, sz x, sz lx, sz rx)
+fn Monoid LazySegmentTree.get(&self, sz i, sz x, sz lx, sz rx)
 {
 	if (rx - lx == 1) return self.tree[x];
 	self.push(x);
@@ -46,20 +46,20 @@ fn Monoid LazySeg.get(&self, sz i, sz x, sz lx, sz rx)
 	return self.get(i, 2 * x + 2, m, rx);
 }
 
-fn void LazySeg.apply_node(&self, sz x, Action f) @inline
+fn void LazySegmentTree.apply_node(&self, sz x, Action f) @inline
 {
 	self.tree[x] = f.act(self.tree[x]);
 	self.lazy[x] = self.lazy[x].op(f);
 }
 
-fn void LazySeg.push(&self, sz x) @inline
+fn void LazySegmentTree.push(&self, sz x) @inline
 {
 	self.apply_node(2 * x + 1, self.lazy[x]);
 	self.apply_node(2 * x + 2, self.lazy[x]);
 	self.lazy[x] = ((Action) { }).e();
 }
 
-fn void LazySeg.set(&self, sz i, Monoid v, sz x, sz lx, sz rx)
+fn void LazySegmentTree.set(&self, sz i, Monoid v, sz x, sz lx, sz rx)
 {
 	if (rx - lx == 1)
 	{
@@ -79,7 +79,7 @@ fn void LazySeg.set(&self, sz i, Monoid v, sz x, sz lx, sz rx)
 	self.tree[x] = self.tree[2 * x + 1].op(self.tree[2 * x + 2]);
 }
 
-fn void LazySeg.update(&self, sz l, sz r, Action f, sz x, sz lx, sz rx)
+fn void LazySegmentTree.update(&self, sz l, sz r, Action f, sz x, sz lx, sz rx)
 {
 	if (l >= rx || r <= lx) return;
 	if (l <= lx && rx <= r)
@@ -94,7 +94,7 @@ fn void LazySeg.update(&self, sz l, sz r, Action f, sz x, sz lx, sz rx)
 	self.tree[x] = self.tree[2 * x + 1].op(self.tree[2 * x + 2]);
 }
 
-fn Monoid LazySeg.range(&self, sz l, sz r, sz x, sz lx, sz rx)
+fn Monoid LazySegmentTree.range(&self, sz l, sz r, sz x, sz lx, sz rx)
 {
 	if (l >= rx || r <= lx) return ((Monoid) { }).e();
 	if (l <= lx && rx <= r) return self.tree[x];
