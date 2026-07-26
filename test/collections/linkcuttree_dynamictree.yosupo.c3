@@ -6,59 +6,61 @@ import c3algo::algebra;
 import c3algo::io;
 
 alias Sum = algebra::Sum{long};
-alias Empty = algebra::Empty{long};
+alias Identity = algebra::Empty{long};
+alias Tree = linkcuttree::LinkCutTree{Sum, Identity};
 
-alias Node = linkcuttree::Node{Sum, Empty};
-alias new_node = linkcuttree::new_node{Sum, Empty};
-alias link = linkcuttree::link{Sum, Empty};
-alias cut = linkcuttree::cut{Sum, Empty};
-alias path_query = linkcuttree::path_query{Sum, Empty};
-alias point_set = linkcuttree::point_set{Sum, Empty};
+const int OP_RELINK = 0;
+const int OP_ADD    = 1;
 
 fn void main()
 {
 	FastInput inp;
 	inp.init();
 	defer inp.free();
+
 	FastOutput out;
 	out.init();
 	defer out.free();
 
-	int n = inp.read(int);
-	int q = inp.read(int);
+	sz n       = inp.read(sz);
+	sz queries = inp.read(sz);
 
-	Node*[] node = mem::new_array(Node*, (usz)n);
-	defer mem::free(node);
-	for (int i = 0; i < n; i++)
+	Sum[] values = alloc::new_array(tmem, Sum, n);
+	foreach (&v : values)
 	{
-		node[i] = new_node((Sum) { inp.read(long) });
+		*v = (Sum) { .v = inp.read(long) };
 	}
-	for (int i = 0; i < n - 1; i++)
+
+	Tree t;
+	t.init_with(mem, values);
+	defer t.free();
+
+	for (sz i = 0; i < n - 1; i++)
 	{
-		int u = inp.read(int);
-		int v = inp.read(int);
-		link(node[u], node[v]);
+		sz u = inp.read(sz);
+		sz v = inp.read(sz);
+		t.link(u, v);
 	}
-	while (q-- > 0)
+
+	while (queries-- > 0)
 	{
-		int kind = inp.read(int);
-		switch (kind)
+		switch (inp.read(int))
 		{
-			case 0:
-				int u = inp.read(int);
-				int v = inp.read(int);
-				int w = inp.read(int);
-				int x = inp.read(int);
-				cut(node[u], node[v]);
-				link(node[w], node[x]);
-			case 1:
-				int p = inp.read(int);
+			case OP_RELINK:
+				sz u = inp.read(sz);
+				sz v = inp.read(sz);
+				sz w = inp.read(sz);
+				sz x = inp.read(sz);
+				t.cut(u, v);
+				t.link(w, x);
+			case OP_ADD:
+				sz p = inp.read(sz);
 				long x = inp.read(long);
-				point_set(node[p], (Sum) { node[p].val.v + x });
+				t.set(p, (Sum) { .v = t.get(p).v + x });
 			default:
-				int u = inp.read(int);
-				int v = inp.read(int);
-				out.writeln(path_query(node[u], node[v]).v);
+				sz u = inp.read(sz);
+				sz v = inp.read(sz);
+				out.writeln(t.path(u, v).v);
 		}
 	}
 }
