@@ -1,7 +1,7 @@
 // @title Convolution (NTT, Mod 998244353)
 // PROBLEM: https://judge.yosupo.jp/problem/convolution_mod
 
-import c3algo::conv::ntt;
+import c3algo::convolution::ntt;
 import c3algo::io;
 import std::collections::list;
 

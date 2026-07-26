@@ -1,5 +1,5 @@
 // @title FFT
-module c3algo::conv::fft <Real>;
+module c3algo::convolution::fft <Real>;
 
 import std::math::complex, std::math, std::time;
 import c3algo::arith;

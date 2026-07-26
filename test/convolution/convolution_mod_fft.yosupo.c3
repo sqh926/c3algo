@@ -1,7 +1,7 @@
 // @title Convolution (FFT, Mod 1000000007)
 // PROBLEM: https://judge.yosupo.jp/problem/convolution_mod_1000000007
 
-import c3algo::conv::fft;
+import c3algo::convolution::fft;
 import c3algo::io;
 import std::collections::list;
 

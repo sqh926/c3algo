@@ -1,5 +1,5 @@
 // @title NTT
-module c3algo::conv::ntt <MOD>;
+module c3algo::convolution::ntt <MOD>;
 
 import c3algo::numtheory::modint;
 import c3algo::numtheory::factorize;
