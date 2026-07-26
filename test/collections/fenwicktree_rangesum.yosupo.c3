@@ -8,39 +8,45 @@ import c3algo::collections::fenwicktree;
 alias SumLong = Sum{long};
 alias Fen = FenwickTree{SumLong};
 
+const int OP_ADD = 0;
+
 fn void main()
 {
 	FastInput inp;
 	inp.init();
 	defer inp.free();
+
 	FastOutput out;
 	out.init();
 	defer out.free();
 
-	int n = inp.read(int);
-	int q = inp.read(int);
+	sz n       = inp.read(sz);
+	sz queries = inp.read(sz);
+
+	SumLong[] values = alloc::new_array(tmem, SumLong, n);
+	foreach (&v : values)
+	{
+		*v = (SumLong) { inp.read(long) };
+	}
 
 	Fen ft;
-	ft.init(mem, n);
-	for (int i = 0; i < n; i++)
-	{
-		int x = inp.read(int);
-		ft.add(i, (SumLong) { x });
-	}
-	while (q-- > 0)
+	ft.init_with(mem, values);
+	defer ft.free();
+
+	while (queries-- > 0)
 	{
 		int kind = inp.read(int);
-		if (kind == 0)
+		if (kind == OP_ADD)
 		{
-			int p = inp.read(int);
-			int x = inp.read(int);
+			sz p   = inp.read(sz);
+			long x = inp.read(long);
 			ft.add(p, (SumLong) { x });
 		}
 		else
 		{
-			int l = inp.read(int);
-			int r = inp.read(int);
-			out.writeln(ft.range((sz)l, (sz)r).v);
+			sz l = inp.read(sz);
+			sz r = inp.read(sz);
+			out.writeln(ft.range(l, r).v);
 		}
 	}
 }
