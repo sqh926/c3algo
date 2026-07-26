@@ -4,7 +4,7 @@
  @require SIZE / (uint::size * 8) < uint::max
 *>
 // Cannot put Word ^^^ here instead of uint
-module c3algo::ds::bitset <SIZE>;
+module c3algo::collections::bitset <SIZE>;
 
 alias Word = uint;
 

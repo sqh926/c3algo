@@ -3,7 +3,7 @@
 
 import std::io;
 import c3algo::io;
-import c3algo::ds::bitset;
+import c3algo::collections::bitset;
 
 const MAXN = 1 << 12;
 alias Row = BitSet{MAXN};
