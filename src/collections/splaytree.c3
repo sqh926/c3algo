@@ -1,9 +1,13 @@
 // @title Implicit Splay Tree
 <*
- @require concept::@is_monoid(Monoid)
- @require concept::@is_action(Action, Monoid)
+ A variant of self-balancing binary search tree.
+ https://en.wikipedia.org/wiki/Splay_tree
+
+ @require concept::@is_monoid(Monoid) : "Splay tree requires a monoid with `op(a,b)` and `e()`"
+ @require concept::@is_action(Action, Monoid) : "Splay tree requires an action with `act(m)`, `op(f)` and `e()`"
 *>
 module c3algo::collections::splaytree <Monoid, Action>;
+
 import c3algo::algebra::concept;
 
 const int L = 0;
@@ -20,244 +24,430 @@ struct Node
 	Node* parent;
 	Node*[2] child;
 }
-alias SplayTree = Node*;
 
-fn SplayTree new_node(Monoid v)
+struct SplayTree
 {
-	Node* n = mem::new(Node);
-	n.val = v;
-	n.agg = v;
-	n.ragg = v;
-	n.lazy = ((Action) { }).e();
-	n.size = 1;
-	return n;
+	Allocator allocator;
+	Node* root;
 }
 
-fn sz safe_size(SplayTree t) @inline => t ? t.size : 0;
-fn Monoid safe_agg(SplayTree t) @inline => t ? t.agg : ((Monoid) { }).e();
-fn Monoid safe_ragg(SplayTree t) @inline => t ? t.ragg : ((Monoid) { }).e();
+<*
+ Initialize an empty sequence.
 
-fn void apply(SplayTree t, Action f) @inline
+ @param [&inout] allocator : "The allocator for nodes"
+
+ @require !self.is_initialized() : "The SplayTree must not be initialized"
+
+ @ensure self.root == null
+*>
+fn SplayTree* SplayTree.init(&self, Allocator allocator)
 {
-	t.val = f.act(t.val);
-	t.agg = f.act(t.agg);
-	t.ragg = f.act(t.ragg);
-	t.lazy = t.lazy.op(f);
+	self.allocator = allocator;
+	self.root = null;
+	return self;
 }
 
-fn void apply_rev(SplayTree t) @inline
+<*
+ Initialize an empty sequence with the temp allocator.
+
+ @require !self.is_initialized() : "The SplayTree must not be initialized"
+
+ @ensure self.root == null
+*>
+fn SplayTree* SplayTree.tinit(&self) @inline => self.init(tmem);
+
+<*
+ Free every node and leave the sequence uninitialized.
+
+ @ensure !self.is_initialized()
+*>
+fn void SplayTree.free(&self)
 {
-	@swap(t.agg, t.ragg);
-	t.rev ^= true;
+	if (!self.is_initialized()) return;
+	self.clear();
+	*self = { };
 }
 
-fn void pull(SplayTree t)
+<*
+ Free every node, keeping the sequence initialized.
+
+ @require self.is_initialized() : "The SplayTree must be initialized"
+
+ @ensure self.root == null
+*>
+fn void SplayTree.clear(&self)
 {
-	t.agg = safe_agg(t.child[L]).op(t.val).op(safe_agg(t.child[R]));
-	t.ragg = safe_ragg(t.child[R]).op(t.val).op(safe_ragg(t.child[L]));
-	t.size = 1 + safe_size(t.child[L]) + safe_size(t.child[R]);
+	free_nodes(self.allocator, self.root);
+	self.root = null;
 }
 
-fn void push(SplayTree t)
+<*
+ @return "`true` if the sequence has an allocator"
+*>
+fn bool SplayTree.is_initialized(&self) @inline => self.allocator != null;
+
+<*
+ @return "The number of elements"
+*>
+fn sz SplayTree.len(&self) @inline => safe_size(self.root);
+
+<*
+ @return "`true` if the sequence holds no elements"
+*>
+fn bool SplayTree.is_empty(&self) @inline => self.root == null;
+
+<*
+ Append an element.
+
+ @param v : "The element to append"
+
+ @require self.is_initialized() : "The SplayTree must be initialized"
+*>
+fn void SplayTree.push_back(&self, Monoid v)
 {
-	if (t.rev)
+	self.root = merge_nodes(self.root, new_node(self.allocator, v));
+}
+
+<*
+ Insert an element, shifting everything from `at` one position to the right.
+
+ @param at : "The position the element takes"
+ @param v : "The element to insert"
+
+ @require self.allocator != null : "The SplayTree must be initialized"
+ @require at >= 0 && at <= self.len() : "Index out of range"
+*>
+fn void SplayTree.insert(&self, sz at, Monoid v)
+{
+	Node* a;
+	Node* b;
+	split_nodes(self.root, at, &a, &b);
+	self.root = merge_nodes(merge_nodes(a, new_node(self.allocator, v)), b);
+}
+
+<*
+ Remove the element at `at`.
+
+ @param at : "The position to remove"
+
+ @require self.allocator != null : "The SplayTree must be initialized"
+ @require at >= 0 && at < self.len() : "Index out of range"
+*>
+fn void SplayTree.erase(&self, sz at)
+{
+	Node* a;
+	Node* m;
+	Node* b;
+	split_nodes(self.root, at, &a, &b);
+	split_nodes(b, 1, &m, &b);
+	alloc::free(self.allocator, m);
+	self.root = merge_nodes(a, b);
+}
+
+<*
+ Read the element at `k`, splaying it to the root.
+
+ @param k : "The position to read"
+
+ @return "The element at `k`"
+
+ @require k >= 0 && k < self.len() : "Index out of range"
+*>
+fn Monoid SplayTree.get(&self, sz k)
+{
+	Node* node = kth_node(self.root, k);
+	splay(node);
+	self.root = node;
+	return node.val;
+}
+
+<*
+ Replace the element at `k`.
+
+ @param k : "The position to write"
+ @param v : "The new element"
+
+ @require k >= 0 && k < self.len() : "Index out of range"
+*>
+fn void SplayTree.set(&self, sz k, Monoid v)
+{
+	Node* a;
+	Node* b;
+	Node* c;
+	split_nodes(self.root, k, &a, &b);
+	split_nodes(b, 1, &b, &c);
+	b.val = v;
+	pull(b);
+	self.root = merge_nodes(merge_nodes(a, b), c);
+}
+
+<*
+ Fold of the range [l, r).
+
+ @param l : "The first position of the range"
+ @param r : "One past the last position of the range"
+
+ @return "The fold of the range, the monoid identity when empty"
+
+ @require l >= 0 && l <= r && r <= self.len() : "Range out of bounds"
+*>
+fn Monoid SplayTree.range(&self, sz l, sz r)
+{
+	Node* a;
+	Node* b;
+	Node* c;
+	split_nodes(self.root, l, &a, &b);
+	split_nodes(b, r - l, &b, &c);
+	Monoid res = safe_agg(b);
+	self.root = merge_nodes(merge_nodes(a, b), c);
+	return res;
+}
+
+<*
+ Apply an action to every element in the range [l, r).
+
+ @param l : "The first position of the range"
+ @param r : "One past the last position of the range"
+ @param f : "The action to apply"
+
+ @require l >= 0 && l <= r && r <= self.len() : "Range out of bounds"
+*>
+fn void SplayTree.update(&self, sz l, sz r, Action f)
+{
+	Node* a;
+	Node* b;
+	Node* c;
+	split_nodes(self.root, l, &a, &b);
+	split_nodes(b, r - l, &b, &c);
+	if (b) apply(b, f);
+	self.root = merge_nodes(merge_nodes(a, b), c);
+}
+
+<*
+ Reverse the range [l, r).
+
+ @param l : "The first position of the range"
+ @param r : "One past the last position of the range"
+
+ @require l >= 0 && l <= r && r <= self.len() : "Range out of bounds"
+*>
+fn void SplayTree.reverse(&self, sz l, sz r)
+{
+	Node* a;
+	Node* b;
+	Node* c;
+	split_nodes(self.root, l, &a, &b);
+	split_nodes(b, r - l, &b, &c);
+	if (b) apply_rev(b);
+	self.root = merge_nodes(merge_nodes(a, b), c);
+}
+
+<*
+ Cut the sequence in two, keeping [0, at) here.
+
+ @param at : "Index of first element going to the right sequence"
+
+ @return "A sequence holding the elements [at, len), sharing this allocator"
+
+ @require self.allocator != null : "The SplayTree must be initialized"
+ @require at >= 0 && at <= self.len() : "Index out of range"
+*>
+fn SplayTree SplayTree.split(&self, sz at)
+{
+	SplayTree right;
+	right.allocator = self.allocator;
+	split_nodes(self.root, at, &self.root, &right.root);
+	return right;
+}
+
+<*
+ Append every element of `other`, absorbing `other` in the process.
+
+ @param [&inout] other : "The sequence to absorb"
+
+ @require self.allocator == other.allocator : "Both sequences must share an allocator"
+ @require self != other : "A sequence may not be merged into itself"
+*>
+fn void SplayTree.merge(&self, SplayTree* other)
+{
+	self.root = merge_nodes(self.root, other.root);
+	other.root = null;
+}
+
+fn Node* new_node(Allocator allocator, Monoid v) @local
+{
+	Node* node = alloc::new(allocator, Node);
+	node.val = v;
+	node.agg = v;
+	node.ragg = v;
+	node.lazy = ((Action) { }).e();
+	node.size = 1;
+	return node;
+}
+
+fn sz safe_size(Node* node) @local @inline => node ? node.size : 0;
+
+fn Monoid safe_agg(Node* node) @local @inline => node ? node.agg : ((Monoid) { }).e();
+
+fn Monoid safe_ragg(Node* node) @local @inline => node ? node.ragg : ((Monoid) { }).e();
+
+fn void apply(Node* node, Action f) @local @inline
+{
+	node.val = f.act(node.val);
+	node.agg = f.act(node.agg);
+	node.ragg = f.act(node.ragg);
+	node.lazy = node.lazy.op(f);
+}
+
+fn void apply_rev(Node* node) @local @inline
+{
+	@swap(node.agg, node.ragg);
+	node.rev ^= true;
+}
+
+fn void pull(Node* node) @local
+{
+	node.agg = safe_agg(node.child[L]).op(node.val).op(safe_agg(node.child[R]));
+	node.ragg = safe_ragg(node.child[R]).op(node.val).op(safe_ragg(node.child[L]));
+	node.size = 1 + safe_size(node.child[L]) + safe_size(node.child[R]);
+}
+
+fn void push_down(Node* node) @local
+{
+	if (node.rev)
 	{
-		@swap(t.child[L], t.child[R]);
-		if (t.child[L]) apply_rev(t.child[L]);
-		if (t.child[R]) apply_rev(t.child[R]);
-		t.rev = false;
+		@swap(node.child[L], node.child[R]);
+		if (node.child[L]) apply_rev(node.child[L]);
+		if (node.child[R]) apply_rev(node.child[R]);
+		node.rev = false;
 	}
-	if (t.child[L]) apply(t.child[L], t.lazy);
-	if (t.child[R]) apply(t.child[R], t.lazy);
-	t.lazy = ((Action) { }).e();
+	if (node.child[L]) apply(node.child[L], node.lazy);
+	if (node.child[R]) apply(node.child[R], node.lazy);
+	node.lazy = ((Action) { }).e();
 }
 
-fn bool is_root(SplayTree x) @inline
+fn bool is_root(Node* node) @local @inline
 {
-	return x.parent == null || (x.parent.child[L] != x && x.parent.child[R] != x);
+	return node.parent == null || (node.parent.child[L] != node && node.parent.child[R] != node);
 }
 
-fn void rotate(SplayTree x)
+fn void rotate(Node* node) @local
 {
-	Node* p = x.parent;
-	Node* g = p.parent;
-	int dir = p.child[R] == x ? R : L;
-	int opp = dir ^ 1;
-	p.child[dir] = x.child[opp];
-	if (x.child[opp]) x.child[opp].parent = p;
-	x.child[opp] = p;
-	p.parent = x;
-	x.parent = g;
-	if (g)
+	Node* parent = node.parent;
+	Node* grand  = parent.parent;
+	int dir      = parent.child[R] == node ? R : L;
+	int opp      = dir ^ 1;
+	parent.child[dir] = node.child[opp];
+	if (node.child[opp]) node.child[opp].parent = parent;
+	node.child[opp] = parent;
+	parent.parent = node;
+	node.parent = grand;
+	if (grand)
 	{
-		if (g.child[L] == p)
+		if (grand.child[L] == parent)
 		{
-			g.child[L] = x;
+			grand.child[L] = node;
 		}
-		else if (g.child[R] == p)
+		else if (grand.child[R] == parent)
 		{
-			g.child[R] = x;
+			grand.child[R] = node;
 		}
 	}
-	pull(p);
-	pull(x);
+	pull(parent);
+	pull(node);
 }
 
-fn void splay(SplayTree x)
+fn void splay(Node* node) @local
 {
-	while (!is_root(x))
+	while (!is_root(node))
 	{
-		Node* p = x.parent;
-		if (!is_root(p))
+		Node* parent = node.parent;
+		if (!is_root(parent))
 		{
-			bool same = (p.parent.child[L] == p) == (p.child[L] == x);
-			if (same)
-			{
-				rotate(p);
-			}
-			else
-			{
-				rotate(x);
-			}
+			bool zigzig = (parent.parent.child[L] == parent) == (parent.child[L] == node);
+			rotate(zigzig ? parent : node);
 		}
-		rotate(x);
+		rotate(node);
 	}
 }
 
-fn SplayTree kth_node(SplayTree t, sz k)
+fn Node* kth_node(Node* node, sz k) @local
 {
-	while (t)
+	while (node)
 	{
-		push(t);
-		sz ls = safe_size(t.child[L]);
-		if (k == ls) return t;
+		push_down(node);
+		sz ls = safe_size(node.child[L]);
+		if (k == ls) return node;
 		if (k < ls)
 		{
-			t = t.child[L];
+			node = node.child[L];
+			continue;
 		}
-		else
-		{
-			k -= ls + 1;
-			t = t.child[R];
-		}
+		k -= ls + 1;
+		node = node.child[R];
 	}
 	return null;
 }
 
-fn void split(SplayTree t, sz k, SplayTree* a, SplayTree* b)
+fn void split_nodes(Node* node, sz k, Node** l, Node** r) @local
 {
 	if (k == 0)
 	{
-		*a = null;
-		*b = t;
+		*l = null;
+		*r = node;
 		return;
 	}
-	if (k >= safe_size(t))
+	if (k >= safe_size(node))
 	{
-		*a = t;
-		*b = null;
+		*l = node;
+		*r = null;
 		return;
 	}
-	SplayTree x = kth_node(t, k - 1);
-	splay(x);
-	SplayTree right = x.child[R];
-	x.child[R] = null;
+	Node* left = kth_node(node, k - 1);
+	splay(left);
+	Node* right = left.child[R];
+	left.child[R] = null;
 	if (right) right.parent = null;
-	pull(x);
-	*a = x;
-	*b = right;
+	pull(left);
+	*l = left;
+	*r = right;
 }
 
-fn void merge(SplayTree* t, SplayTree a, SplayTree b)
+fn Node* merge_nodes(Node* l, Node* r) @local
 {
-	if (!a || !b)
+	if (!l || !r) return l ? l : r;
+	Node* last = l;
+	push_down(last);
+	while (last.child[R])
 	{
-		(*t) = a ? a : b;
-		return;
+		last = last.child[R];
+		push_down(last);
 	}
-	SplayTree x = a;
-	push(x);
-	while (x.child[R])
+	splay(last);
+	last.child[R] = r;
+	r.parent = last;
+	pull(last);
+	return last;
+}
+
+<*
+ A splay tree is not height balanced, so the nodes are released by repeatedly rotating the
+ left child up and detaching the root, which never recurses however deep the tree got.
+*>
+fn void free_nodes(Allocator allocator, Node* node) @local
+{
+	while (node)
 	{
-		x = x.child[R];
-		push(x);
+		if (!node.child[L])
+		{
+			Node* rest = node.child[R];
+			alloc::free(allocator, node);
+			node = rest;
+			continue;
+		}
+		Node* left = node.child[L];
+		node.child[L] = left.child[R];
+		left.child[R] = node;
+		node = left;
 	}
-	splay(x);
-	x.child[R] = b;
-	b.parent = x;
-	pull(x);
-	*t = x;
-}
-
-fn void push_back(SplayTree* t, Monoid v)
-{
-	merge(t, *t, new_node(v));
-}
-
-fn void insert(SplayTree* t, sz pos, Monoid v)
-{
-	SplayTree a;
-	SplayTree b;
-	split(*t, pos, &a, &b);
-	merge(t, a, new_node(v));
-	merge(t, *t, b);
-}
-
-fn void erase(SplayTree* t, sz pos)
-{
-	SplayTree a;
-	SplayTree m;
-	SplayTree b;
-	split(*t, pos, &a, &b);
-	split(b, 1, &m, &b);
-	if (m) mem::free(m);
-	merge(t, a, b);
-}
-
-fn Monoid range(SplayTree* t, sz l, sz r)
-{
-	SplayTree a;
-	SplayTree b;
-	SplayTree c;
-	split(*t, l, &a, &b);
-	split(b, r - l, &b, &c);
-	Monoid res = safe_agg(b);
-	merge(t, a, b);
-	merge(t, *t, c);
-	return res;
-}
-
-fn void update(SplayTree* t, sz l, sz r, Action f)
-{
-	SplayTree a;
-	SplayTree b;
-	SplayTree c;
-	split(*t, l, &a, &b);
-	split(b, r - l, &b, &c);
-	if (b) apply(b, f);
-	merge(t, a, b);
-	merge(t, *t, c);
-}
-
-fn void reverse(SplayTree* t, sz l, sz r)
-{
-	SplayTree a;
-	SplayTree b;
-	SplayTree c;
-	split(*t, l, &a, &b);
-	split(b, r - l, &b, &c);
-	if (b) apply_rev(b);
-	merge(t, a, b);
-	merge(t, *t, c);
-}
-
-fn SplayTree kth(SplayTree* t, sz k)
-{
-	SplayTree x = kth_node(*t, k);
-	if (x)
-	{
-		splay(x);
-		*t = x;
-	}
-	return x;
 }

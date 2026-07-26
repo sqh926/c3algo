@@ -7,30 +7,29 @@ import c3algo::numbertheory::modint;
 import c3algo::io;
 
 alias Mint = ModInt{998244353};
-alias Agg = SumLen{Mint};
+alias Elem = SumLen{Mint};
 alias Map = Affine{Mint};
+alias Tree = splaytree::SplayTree{Elem, Map};
 
-alias Tree = splaytree::SplayTree{Agg, Map};
-alias push_back = splaytree::push_back{Agg, Map};
-alias insert = splaytree::insert{Agg, Map};
-alias erase = splaytree::erase{Agg, Map};
-alias reverse = splaytree::reverse{Agg, Map};
-alias update = splaytree::update{Agg, Map};
-alias range = splaytree::range{Agg, Map};
+const int OP_INSERT  = 0;
+const int OP_ERASE   = 1;
+const int OP_REVERSE = 2;
+const int OP_AFFINE  = 3;
+const int OP_SUM     = 4;
 
-fn Map map(long a, long b)
+fn Elem elem(long value)
+{
+	Elem res @noinit;
+	res.sum.init(value);
+	res.len.init(1);
+	return res;
+}
+
+fn Map affine_map(long a, long b)
 {
 	Map res @noinit;
 	res.a.init(a);
 	res.b.init(b);
-	return res;
-}
-
-fn Agg agg(long a, long b)
-{
-	Agg res @noinit;
-	res.sum.init(a);
-	res.len.init(b);
 	return res;
 }
 
@@ -39,44 +38,50 @@ fn void main()
 	FastInput inp;
 	inp.init();
 	defer inp.free();
+
 	FastOutput out;
 	out.init();
 	defer out.free();
 
-	int n = inp.read(int);
-	int q = inp.read(int);
+	sz n       = inp.read(sz);
+	sz queries = inp.read(sz);
 
 	Tree t;
-	for (int i = 0; i < n; i++)
+	t.init(mem);
+	defer t.free();
+
+	for (sz i = 0; i < n; i++)
 	{
-		push_back(&t, agg(inp.read(long), 1));
+		t.push_back(elem(inp.read(long)));
 	}
-	while (q-- > 0)
+
+	while (queries-- > 0)
 	{
-		int kind = inp.read(int);
-		switch (kind)
+		switch (inp.read(int))
 		{
-			case 0:
-				int i = inp.read(int);
-				long x = inp.read(long);
-				insert(&t, (sz)i, agg(x, 1));
-			case 1:
-				int i = inp.read(int);
-				erase(&t, (sz)i);
-			case 2:
-				int l = inp.read(int);
-				int r = inp.read(int);
-				reverse(&t, (sz)l, (sz)r);
-			case 3:
-				int l = inp.read(int);
-				int r = inp.read(int);
+			case OP_INSERT:
+				sz at = inp.read(sz);
+				long value = inp.read(long);
+				t.insert(at, elem(value));
+			case OP_ERASE:
+				sz at = inp.read(sz);
+				t.erase(at);
+			case OP_REVERSE:
+				sz l = inp.read(sz);
+				sz r = inp.read(sz);
+				t.reverse(l, r);
+			case OP_AFFINE:
+				sz l = inp.read(sz);
+				sz r = inp.read(sz);
+				long a = inp.read(long);
 				long b = inp.read(long);
-				long c = inp.read(long);
-				update(&t, (sz)l, (sz)r, map(b, c));
+				t.update(l, r, affine_map(a, b));
+			case OP_SUM:
+				sz l = inp.read(sz);
+				sz r = inp.read(sz);
+				out.writeln(t.range(l, r).sum.val());
 			default:
-				int l = inp.read(int);
-				int r = inp.read(int);
-				out.writeln(range(&t, (sz)l, (sz)r).sum.val());
+				unreachable();
 		}
 	}
 }

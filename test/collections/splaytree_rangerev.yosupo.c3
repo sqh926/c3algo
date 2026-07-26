@@ -6,48 +6,53 @@ import c3algo::algebra;
 import c3algo::io;
 
 alias Sum = algebra::Sum{long};
-struct Empty
+
+struct Identity
 {
 	char unused;
 }
-fn Sum Empty.act(self, Sum m) @inline => m;
-fn Empty Empty.op(self, Empty o) @inline => self;
-fn Empty Empty.e(self) @inline => (Empty) { };
+fn Sum Identity.act(self, Sum m) @inline => m;
+fn Identity Identity.op(self, Identity other) @inline => self;
+fn Identity Identity.e(self) @inline => (Identity) { };
 
-alias Tree = splaytree::SplayTree{Sum, Empty};
-alias push_back = splaytree::push_back{Sum, Empty};
-alias range = splaytree::range{Sum, Empty};
-alias reverse = splaytree::reverse{Sum, Empty};
+alias Tree = splaytree::SplayTree{Sum, Identity};
+
+const int OP_REVERSE = 0;
 
 fn void main()
 {
 	FastInput inp;
 	inp.init();
 	defer inp.free();
+
 	FastOutput out;
 	out.init();
 	defer out.free();
 
-	int n = inp.read(int);
-	int q = inp.read(int);
+	sz n       = inp.read(sz);
+	sz queries = inp.read(sz);
 
 	Tree t;
-	for (int i = 0; i < n; i++)
+	t.init(mem);
+	defer t.free();
+
+	for (sz i = 0; i < n; i++)
 	{
-		push_back(&t, (Sum) { inp.read(long) });
+		t.push_back((Sum) { .v = inp.read(long) });
 	}
-	while (q-- > 0)
+
+	while (queries-- > 0)
 	{
 		int kind = inp.read(int);
-		int l    = inp.read(int);
-		int r    = inp.read(int);
-		if (kind == 0)
+		sz l     = inp.read(sz);
+		sz r     = inp.read(sz);
+		if (kind == OP_REVERSE)
 		{
-			reverse(&t, (sz)l, (sz)r);
+			t.reverse(l, r);
 		}
 		else
 		{
-			out.writeln(range(&t, (sz)l, (sz)r).v);
+			out.writeln(t.range(l, r).v);
 		}
 	}
 }
