@@ -2,7 +2,7 @@
 // PROBLEM: https://judge.yosupo.jp/problem/matrix_product
 
 import c3algo::io;
-import c3algo::numtheory::modint;
+import c3algo::numbertheory::modint;
 
 const int MAXN = 1024;
 alias Mint = ModInt{998244353};

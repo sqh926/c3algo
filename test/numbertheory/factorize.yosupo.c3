@@ -2,7 +2,7 @@
 // PROBLEM: https://judge.yosupo.jp/problem/factorize
 
 import c3algo::io;
-import c3algo::numtheory::factorize;
+import c3algo::numbertheory::factorize;
 
 
 fn void main()

@@ -1,9 +1,9 @@
 // @title Integer Factorization (Pollard's rho)
-module c3algo::numtheory::factorize;
+module c3algo::numbertheory::factorize;
 
 import c3algo::arith;
 import c3algo::random;
-import c3algo::numtheory::primality;
+import c3algo::numbertheory::primality;
 import std::collections::list;
 import std::sort;
 

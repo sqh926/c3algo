@@ -3,7 +3,7 @@
  @require MOD > 0 : "Modulo must be greater than 0"
  @require types::is_int($Typeof(MOD)) : "Modulo must be an integer type"
 *>
-module c3algo::numtheory::modint <MOD>;
+module c3algo::numbertheory::modint <MOD>;
 
 import std::math;
 import std::io;

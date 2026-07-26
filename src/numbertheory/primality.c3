@@ -1,5 +1,5 @@
 // @title Primality Test (Miller-Rabin)
-module c3algo::numtheory::primality;
+module c3algo::numbertheory::primality;
 
 import c3algo::arith;
 

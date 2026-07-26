@@ -1,8 +1,8 @@
 // @title NTT
 module c3algo::convolution::ntt <MOD>;
 
-import c3algo::numtheory::modint;
-import c3algo::numtheory::factorize;
+import c3algo::numbertheory::modint;
+import c3algo::numbertheory::factorize;
 import c3algo::arith;
 import std::core::mem::alloc;
 

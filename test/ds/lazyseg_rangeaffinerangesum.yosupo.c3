@@ -3,7 +3,7 @@
 
 import c3algo::ds::lazyseg;
 import c3algo::algebra::affine;
-import c3algo::numtheory::modint;
+import c3algo::numbertheory::modint;
 import c3algo::io;
 import std::core::mem;
 

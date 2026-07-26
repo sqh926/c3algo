@@ -2,7 +2,7 @@
 // PROBLEM: https://judge.yosupo.jp/problem/primality_test
 
 import c3algo::io;
-import c3algo::numtheory::primality;
+import c3algo::numbertheory::primality;
 
 
 fn void main()

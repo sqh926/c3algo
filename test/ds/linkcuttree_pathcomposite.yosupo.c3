@@ -3,7 +3,7 @@
 
 import c3algo::ds::lctree;
 import c3algo::algebra::affine;
-import c3algo::numtheory::modint;
+import c3algo::numbertheory::modint;
 import c3algo::io;
 
 alias Mint = ModInt{998244353};
