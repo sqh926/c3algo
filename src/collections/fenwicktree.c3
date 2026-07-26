@@ -1,5 +1,5 @@
 // @title Fenwick Tree
-module c3algo::ds::fenwick <Monoid>;
+module c3algo::collections::fenwicktree <Monoid>;
 
 import std::collections::list;
 

@@ -3,7 +3,7 @@
 
 import c3algo::algebra;
 import c3algo::io;
-import c3algo::ds::fenwick;
+import c3algo::collections::fenwicktree;
 
 alias SumLong = Sum{long};
 alias Fen = FenwickTree{SumLong};
