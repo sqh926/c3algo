@@ -10,6 +10,8 @@ alias Mint = ModInt{998244353};
 alias Aff = Affine{Mint};
 alias Seg = SegmentTree{Aff};
 
+const int OP_SET = 0;
+
 fn Aff affine(long a, long b)
 {
 	Aff f;
@@ -23,38 +25,41 @@ fn void main()
 	FastInput inp;
 	inp.init();
 	defer inp.free();
+
 	FastOutput out;
 	out.init();
 	defer out.free();
 
-	int n = inp.read(int);
-	int q = inp.read(int);
+	sz n       = inp.read(sz);
+	sz queries = inp.read(sz);
 
-	Seg st @noinit;
-	st.init(mem, (sz)n);
-	for (int i = 0; i < n; i++)
+	Seg st;
+	st.init(mem, n);
+	defer st.free();
+
+	for (sz i = 0; i < n; i++)
 	{
 		long a = inp.read(long);
 		long b = inp.read(long);
-		st.set(i, affine(a, b), 0, 0, st.size);
+		st.set(i, affine(a, b));
 	}
 
-	while (q-- > 0)
+	while (queries-- > 0)
 	{
 		int kind = inp.read(int);
-		if (kind == 0)
+		if (kind == OP_SET)
 		{
-			int p  = inp.read(int);
+			sz p   = inp.read(sz);
 			long c = inp.read(long);
 			long d = inp.read(long);
-			st.set(p, affine(c, d), 0, 0, st.size);
+			st.set(p, affine(c, d));
 		}
 		else
 		{
-			int l    = inp.read(int);
-			int r    = inp.read(int);
+			sz l     = inp.read(sz);
+			sz r     = inp.read(sz);
 			long x   = inp.read(long);
-			Aff f    = st.range(l, r, 0, 0, st.size);
+			Aff f    = st.range(l, r);
 			Mint res = f.a * x;
 			res += f.b;
 			out.writeln(res.val());

@@ -8,38 +8,45 @@ import c3algo::io;
 alias SumLong = Sum{long};
 alias Seg = SegmentTree{SumLong};
 
+const int OP_ADD = 0;
+
 fn void main()
 {
 	FastInput inp;
 	inp.init();
 	defer inp.free();
+
 	FastOutput out;
 	out.init();
 	defer out.free();
 
-	int n = inp.read(int);
-	int q = inp.read(int);
-	Seg st @noinit;
-	st.init(mem, (sz)n);
-	for (int i = 0; i < n; i++)
+	sz n       = inp.read(sz);
+	sz queries = inp.read(sz);
+
+	SumLong[] values = alloc::new_array(tmem, SumLong, n);
+	foreach (&v : values)
 	{
-		int x = inp.read(int);
-		st.set(i, (SumLong) { x }, 0, 0, st.size);
+		*v = (SumLong) { inp.read(long) };
 	}
-	while (q-- > 0)
+
+	Seg st;
+	st.init_with(mem, values);
+	defer st.free();
+
+	while (queries-- > 0)
 	{
 		int kind = inp.read(int);
-		if (kind == 0)
+		if (kind == OP_ADD)
 		{
-			int p = inp.read(int);
-			int x = inp.read(int);
-			st.set(p, st.get(p).op((SumLong) { x }), 0, 0, st.size);
+			sz p   = inp.read(sz);
+			long x = inp.read(long);
+			st.set(p, st.get(p).op((SumLong) { x }));
 		}
 		else
 		{
-			int l = inp.read(int);
-			int r = inp.read(int);
-			out.writeln(st.range(l, r, 0, 0, st.size).v);
+			sz l = inp.read(sz);
+			sz r = inp.read(sz);
+			out.writeln(st.range(l, r).v);
 		}
 	}
 }
