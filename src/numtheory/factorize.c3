@@ -2,25 +2,13 @@
 module c3algo::numtheory::factorize;
 
 import c3algo::util::gcd;
+import c3algo::util::rng;
 import c3algo::util::bpow;
 import c3algo::numtheory::primality;
 import std::collections::list;
 import std::sort;
 
 alias UlongList = List{ulong};
-
-ulong rng_state @local = 0xdeadbeef;
-
-fn ulong next_rand() @local
-{
-	ulong x = rng_state;
-	x ^= x << 13;
-	x ^= x >> 7;
-	x ^= x << 17;
-	rng_state = x;
-	return x;
-}
-
 
 fn ulong f(ulong x, ulong c, ulong n) @local @inline
 {
@@ -34,9 +22,9 @@ fn ulong get_divisor(ulong n) @local
 	const int BATCH = 128;
 	while (true)
 	{
-		ulong a = next_rand() % (n - 1) + 1;
+		ulong a = rng::next() % (n - 1) + 1;
 		ulong b = a;
-		ulong c = next_rand() % (n - 2) + 2;
+		ulong c = rng::next() % (n - 2) + 2;
 		ulong pa;
 		ulong pb;
 		ulong g = 1;

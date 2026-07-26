@@ -25,9 +25,6 @@ fn bool DistVer.less(self, DistVer other) @inline
 }
 
 alias Heap = randheap::RandHeap{DistVer, concept::Less};
-alias push = randheap::push{DistVer, concept::Less};
-alias pop = randheap::pop{DistVer, concept::Less};
-alias is_empty = randheap::is_empty{DistVer, concept::Less};
 
 fn void main()
 {
@@ -63,12 +60,15 @@ fn void main()
 		head[from] = i;
 	}
 
-	Heap heap = { };
+	Heap heap;
+	heap.init(mem);
+	defer heap.free();
+
 	dist[src] = 0;
-	push(&heap, (DistVer) { 0, src });
-	while (!is_empty(&heap))
+	heap.push((DistVer) { 0, src });
+	while (!heap.is_empty())
 	{
-		DistVer cur = pop(&heap);
+		DistVer cur = heap.pop()!!;
 		if (cur.dist > dist[cur.ver]) continue;
 		for (int e = head[cur.ver]; e != -1; e = edge[e].next)
 		{
@@ -77,7 +77,7 @@ fn void main()
 			{
 				dist[edge[e].to] = nd;
 				prev[edge[e].to] = cur.ver;
-				push(&heap, (DistVer) { nd, edge[e].to });
+				heap.push((DistVer) { nd, edge[e].to });
 			}
 		}
 	}

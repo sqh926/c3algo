@@ -14,6 +14,7 @@
 *>
 module c3algo::ds::implicittreap <Monoid, Action>;
 import c3algo::algebra::concept;
+import c3algo::util::rng;
 
 const int L = 0;
 const int R = 1;
@@ -30,16 +31,7 @@ struct Node
 }
 alias ImplicitTreap = Node*;
 
-// https://github.com/WebDrake/xorshift/blob/master/xorshift.c
-uint rng_state @local = 2463534242;
-
-fn int rand_prior() @local
-{
-	rng_state ^= rng_state << 13;
-	rng_state ^= rng_state >> 17;
-	rng_state ^= rng_state << 5;
-	return (int)(rng_state & 0x7fffffff);
-}
+fn int rand_prior() @local => (int)(rng::next() >> 33);
 
 fn ImplicitTreap new_node(Monoid v)
 {
