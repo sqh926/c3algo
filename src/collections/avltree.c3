@@ -1,8 +1,12 @@
 // @title AVL Tree
 <*
+ A variant of self-balancing binary search tree.
+ https://en.wikipedia.org/wiki/AVL_tree
+
  @require concept::@is_ordered(Key) : "AVL Tree requires Key to support <"
 *>
 module c3algo::collections::avltree <Key>;
+
 import c3algo::algebra::concept;
 import std::math;
 
@@ -16,145 +20,145 @@ struct Node
 	int height;
 	Node*[2] child;
 }
-alias AVLTree = Node*;
 
-fn AVLTree new_node(Key key)
+struct AVLTree
 {
-	Node* n = mem::new(Node);
-	n.key = key;
-	n.size = 1;
-	n.height = 1;
-	return n;
+	Allocator allocator;
+	Node* root;
 }
 
-fn sz safe_size(AVLTree t) @inline => t ? t.size : 0;
-fn int safe_height(AVLTree t) @inline => t ? t.height : 0;
-fn int diff(AVLTree t) @inline => safe_height(t.child[L]) - safe_height(t.child[R]);
+<*
+ Initialize an empty tree.
 
-fn void pull(AVLTree t) @inline
+ @param [&inout] allocator : "The allocator for nodes"
+
+ @require !self.is_initialized() : "The AVLTree must not be initialized"
+
+ @ensure self.root == null
+*>
+fn AVLTree* AVLTree.init(&self, Allocator allocator)
 {
-	t.size = 1 + safe_size(t.child[L]) + safe_size(t.child[R]);
-	t.height = 1 + math::max(safe_height(t.child[L]), safe_height(t.child[R]));
+	self.allocator = allocator;
+	self.root = null;
+	return self;
 }
 
-fn void rotate(AVLTree* t, int dir)
+<*
+ Initialize an empty tree with the temp allocator.
+
+ @require !self.is_initialized() : "The AVLTree must not be initialized"
+
+ @ensure self.root == null
+*>
+fn AVLTree* AVLTree.tinit(&self) @inline => self.init(tmem);
+
+<*
+ Free every node and leave the tree uninitialized.
+
+ @ensure !self.is_initialized()
+*>
+fn void AVLTree.free(&self)
 {
-	int opp    = dir ^ 1;
-	Node* node = *t;
-	Node* x    = node.child[opp];
-	node.child[opp] = x.child[dir];
-	x.child[dir] = node;
-	pull(node);
-	pull(x);
-	*t = x;
+	if (!self.is_initialized()) return;
+	self.clear();
+	*self = { };
 }
 
-fn AVLTree balance(AVLTree t)
+<*
+ Free every node, keeping the tree initialized.
+
+ @require self.is_initialized() : "The AVLTree must be initialized"
+
+ @ensure self.root == null
+*>
+fn void AVLTree.clear(&self)
 {
-	pull(t);
-	int bf = diff(t);
-	if (bf > 1)
-	{
-		if (diff(t.child[L]) < 0) rotate(&t.child[L], L);
-		rotate(&t, R);
-	}
-	else if (bf < -1)
-	{
-		if (diff(t.child[R]) > 0) rotate(&t.child[R], R);
-		rotate(&t, L);
-	}
-	return t;
+	free_nodes(self.allocator, self.root);
+	self.root = null;
 }
 
-fn AVLTree insert_node(AVLTree t, Key key)
+<*
+ @return "`true` if the tree has an allocator"
+*>
+fn bool AVLTree.is_initialized(&self) @inline => self.allocator != null;
+
+<*
+ @return "The number of keys"
+*>
+fn sz AVLTree.len(&self) @inline => safe_size(self.root);
+
+<*
+ @return "`true` if the tree holds no keys"
+*>
+fn bool AVLTree.is_empty(&self) @inline => self.root == null;
+
+<*
+ Insert a key, doing nothing if it is already present.
+
+ @param key : "The key to insert"
+
+ @return "`true` if the key was not present before"
+
+ @require self.is_initialized() : "The AVLTree must be initialized"
+*>
+fn bool AVLTree.insert(&self, Key key)
 {
-	if (!t) return new_node(key);
-	if (key < t.key)
-	{
-		t.child[L] = insert_node(t.child[L], key);
-	}
-	else if (t.key < key)
-	{
-		t.child[R] = insert_node(t.child[R], key);
-	}
-	else
-	{
-		return t;
-	}
-	return balance(t);
+	sz before = safe_size(self.root);
+	self.root = insert_node(self.allocator, self.root, key);
+	return self.root.size != before;
 }
 
-fn AVLTree find_min(AVLTree t)
+<*
+ Remove a key, doing nothing if it is absent.
+
+ @param key : "The key to remove"
+
+ @return "`true` if the key was present"
+
+ @require self.is_initialized() : "The AVLTree must be initialized"
+*>
+fn bool AVLTree.erase(&self, Key key)
 {
-	while (t.child[L]) t = t.child[L];
-	return t;
+	sz before = safe_size(self.root);
+	self.root = delete_node(self.allocator, self.root, key);
+	return safe_size(self.root) != before;
 }
 
-fn AVLTree delete_node(AVLTree t, Key key)
+<*
+ @param key : "The key to look for"
+
+ @return "`true` if the key is present"
+*>
+fn bool AVLTree.contains(&self, Key key)
 {
-	if (!t) return null;
-	if (key < t.key)
-	{
-		t.child[L] = delete_node(t.child[L], key);
-	}
-	else if (t.key < key)
-	{
-		t.child[R] = delete_node(t.child[R], key);
-	}
-	else
-	{
-		if (!t.child[L])
-		{
-			Node* r = t.child[R];
-			mem::free(t);
-			return r;
-		}
-		if (!t.child[R])
-		{
-			Node* l = t.child[L];
-			mem::free(t);
-			return l;
-		}
-		Node* succ = find_min(t.child[R]);
-		t.key = succ.key;
-		t.child[R] = delete_node(t.child[R], succ.key);
-	}
-	return balance(t);
-}
-
-fn sz size(AVLTree* t) @inline => safe_size(*t);
-
-fn void insert(AVLTree* t, Key key) => *t = insert_node(*t, key);
-
-fn void erase(AVLTree* t, Key key) => *t = delete_node(*t, key);
-
-fn bool contains(AVLTree* t, Key key)
-{
-	AVLTree node = *t;
+	Node* node = self.root;
 	while (node)
 	{
 		if (key < node.key)
 		{
 			node = node.child[L];
+			continue;
 		}
-		else if (node.key < key)
+		if (node.key < key)
 		{
 			node = node.child[R];
+			continue;
 		}
-		else
-		{
-			return true;
-		}
+		return true;
 	}
 	return false;
 }
 
 <*
- @require k < safe_size(*t) : "kth: index out of range"
+ @param k : "The rank to look up, counting from zero"
+
+ @return "The `k`-th smallest key"
+
+ @require k >= 0 && k < self.len() : "Index out of range"
 *>
-fn Key kth(AVLTree* t, sz k)
+fn Key AVLTree.kth(&self, sz k)
 {
-	AVLTree node = *t;
+	Node* node = self.root;
 	while (true)
 	{
 		sz ls = safe_size(node.child[L]);
@@ -162,68 +166,185 @@ fn Key kth(AVLTree* t, sz k)
 		if (k < ls)
 		{
 			node = node.child[L];
+			continue;
 		}
-		else
-		{
-			k -= ls + 1;
-			node = node.child[R];
-		}
+		k -= ls + 1;
+		node = node.child[R];
 	}
 }
 
-fn sz count_leq(AVLTree* t, Key x)
+<*
+ @param x : "The key to compare against"
+
+ @return "The number of keys not greater than `x`"
+*>
+fn sz AVLTree.count_leq(&self, Key x)
 {
-	AVLTree node = *t;
-	sz cnt       = 0;
+	Node* node = self.root;
+	sz count   = 0;
 	while (node)
 	{
 		if (x < node.key)
 		{
 			node = node.child[L];
+			continue;
 		}
-		else
-		{
-			cnt += safe_size(node.child[L]) + 1;
-			node = node.child[R];
-		}
+		count += safe_size(node.child[L]) + 1;
+		node = node.child[R];
 	}
-	return cnt;
+	return count;
 }
 
-fn Key? floor(AVLTree* t, Key x)
+<*
+ @param x : "The key to compare against"
+
+ @return "The greatest key not greater than `x`"
+ @return? NOT_FOUND
+*>
+fn Key? AVLTree.floor(&self, Key x)
 {
-	AVLTree node = *t;
-	Key? res     = NOT_FOUND~;
+	Node* node = self.root;
+	Key? res   = NOT_FOUND~;
 	while (node)
 	{
 		if (x < node.key)
 		{
 			node = node.child[L];
+			continue;
 		}
-		else
-		{
-			res = node.key;
-			node = node.child[R];
-		}
+		res = node.key;
+		node = node.child[R];
 	}
 	return res;
 }
 
-fn Key? ceil(AVLTree* t, Key x)
+<*
+ @param x : "The key to compare against"
+
+ @return "The smallest key not less than `x`"
+ @return? NOT_FOUND
+*>
+fn Key? AVLTree.ceil(&self, Key x)
 {
-	AVLTree node = *t;
-	Key? res     = NOT_FOUND~;
+	Node* node = self.root;
+	Key? res   = NOT_FOUND~;
 	while (node)
 	{
 		if (node.key < x)
 		{
 			node = node.child[R];
+			continue;
 		}
-		else
-		{
-			res = node.key;
-			node = node.child[L];
-		}
+		res = node.key;
+		node = node.child[L];
 	}
 	return res;
+}
+
+fn Node* new_node(Allocator allocator, Key key) @local
+{
+	Node* node = alloc::new(allocator, Node);
+	node.key = key;
+	node.size = 1;
+	node.height = 1;
+	return node;
+}
+
+fn sz safe_size(Node* node) @local @inline => node ? node.size : 0;
+
+fn int safe_height(Node* node) @local @inline => node ? node.height : 0;
+
+fn int diff(Node* node) @local @inline => safe_height(node.child[L]) - safe_height(node.child[R]);
+
+fn void pull(Node* node) @local @inline
+{
+	node.size = 1 + safe_size(node.child[L]) + safe_size(node.child[R]);
+	node.height = 1 + math::max(safe_height(node.child[L]), safe_height(node.child[R]));
+}
+
+fn void rotate(Node** slot, int dir) @local
+{
+	int opp    = dir ^ 1;
+	Node* node = *slot;
+	Node* top  = node.child[opp];
+	node.child[opp] = top.child[dir];
+	top.child[dir] = node;
+	pull(node);
+	pull(top);
+	*slot = top;
+}
+
+fn Node* balance(Node* node) @local
+{
+	pull(node);
+	int bf = diff(node);
+	if (bf > 1)
+	{
+		if (diff(node.child[L]) < 0) rotate(&node.child[L], L);
+		rotate(&node, R);
+	}
+	else if (bf < -1)
+	{
+		if (diff(node.child[R]) > 0) rotate(&node.child[R], R);
+		rotate(&node, L);
+	}
+	return node;
+}
+
+fn Node* insert_node(Allocator allocator, Node* node, Key key) @local
+{
+	if (!node) return new_node(allocator, key);
+	if (key < node.key)
+	{
+		node.child[L] = insert_node(allocator, node.child[L], key);
+	}
+	else if (node.key < key)
+	{
+		node.child[R] = insert_node(allocator, node.child[R], key);
+	}
+	else
+	{
+		return node;
+	}
+	return balance(node);
+}
+
+fn Node* find_min(Node* node) @local
+{
+	while (node.child[L]) node = node.child[L];
+	return node;
+}
+
+fn Node* delete_node(Allocator allocator, Node* node, Key key) @local
+{
+	if (!node) return null;
+	if (key < node.key)
+	{
+		node.child[L] = delete_node(allocator, node.child[L], key);
+	}
+	else if (node.key < key)
+	{
+		node.child[R] = delete_node(allocator, node.child[R], key);
+	}
+	else
+	{
+		if (!node.child[L] || !node.child[R])
+		{
+			Node* rest = node.child[L] ? node.child[L] : node.child[R];
+			alloc::free(allocator, node);
+			return rest;
+		}
+		Node* succ = find_min(node.child[R]);
+		node.key = succ.key;
+		node.child[R] = delete_node(allocator, node.child[R], succ.key);
+	}
+	return balance(node);
+}
+
+fn void free_nodes(Allocator allocator, Node* node) @local
+{
+	if (!node) return;
+	free_nodes(allocator, node.child[L]);
+	free_nodes(allocator, node.child[R]);
+	alloc::free(allocator, node);
 }

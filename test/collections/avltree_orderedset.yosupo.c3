@@ -5,56 +5,60 @@ import c3algo::collections::avltree;
 import c3algo::io;
 
 alias Set = avltree::AVLTree{int};
-alias insert = avltree::insert{int};
-alias erase = avltree::erase{int};
-alias size = avltree::size{int};
-alias kth = avltree::kth{int};
-alias count_leq = avltree::count_leq{int};
-alias floor = avltree::floor{int};
-alias ceil = avltree::ceil{int};
+
+const int OP_INSERT    = 0;
+const int OP_ERASE     = 1;
+const int OP_KTH       = 2;
+const int OP_COUNT_LEQ = 3;
+const int OP_FLOOR     = 4;
 
 fn void main()
 {
 	FastInput inp;
 	inp.init();
 	defer inp.free();
+
 	FastOutput out;
 	out.init();
 	defer out.free();
 
-	int n = inp.read(int);
-	int q = inp.read(int);
+	sz n       = inp.read(sz);
+	sz queries = inp.read(sz);
 
-	Set tree = null;
-	for (int i = 0; i < n; i++)
+	Set set;
+	set.init(mem);
+	defer set.free();
+
+	for (sz i = 0; i < n; i++)
 	{
-		insert(&tree, inp.read(int));
+		set.insert(inp.read(int));
 	}
-	for (int i = 0; i < q; i++)
+
+	while (queries-- > 0)
 	{
 		int kind = inp.read(int);
 		int x    = inp.read(int);
 		switch (kind)
 		{
-			case 0:
-				insert(&tree, x);
-			case 1:
-				erase(&tree, x);
-			case 2:
-				if ((sz)x > size(&tree))
+			case OP_INSERT:
+				set.insert(x);
+			case OP_ERASE:
+				set.erase(x);
+			case OP_KTH:
+				if ((sz)x > set.len())
 				{
 					out.writeln(-1);
 				}
 				else
 				{
-					out.writeln(kth(&tree, (sz)x - 1));
+					out.writeln(set.kth((sz)x - 1));
 				}
-			case 3:
-				out.writeln(count_leq(&tree, x));
-			case 4:
-				out.writeln(floor(&tree, x) ?? -1);
+			case OP_COUNT_LEQ:
+				out.writeln(set.count_leq(x));
+			case OP_FLOOR:
+				out.writeln(set.floor(x) ?? -1);
 			default:
-				out.writeln(ceil(&tree, x) ?? -1);
+				out.writeln(set.ceil(x) ?? -1);
 		}
 	}
 }
