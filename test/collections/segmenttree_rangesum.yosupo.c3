@@ -2,11 +2,11 @@
 // PROBLEM: https://judge.yosupo.jp/problem/point_add_range_sum
 
 import c3algo::algebra;
-import c3algo::ds::segtree;
+import c3algo::collections::segmenttree;
 import c3algo::io;
 
 alias SumLong = Sum{long};
-alias Seg = SegTree{SumLong};
+alias Seg = SegmentTree{SumLong};
 
 fn void main()
 {

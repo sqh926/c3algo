@@ -1,14 +1,14 @@
 // @title Point Set Range Composite
 // PROBLEM: https://judge.yosupo.jp/problem/point_set_range_composite
 
-import c3algo::ds::segtree;
+import c3algo::collections::segmenttree;
 import c3algo::algebra::affine;
 import c3algo::numbertheory::modint;
 import c3algo::io;
 
 alias Mint = ModInt{998244353};
 alias Aff = Affine{Mint};
-alias Seg = SegTree{Aff};
+alias Seg = SegmentTree{Aff};
 
 fn Aff affine(long a, long b)
 {
