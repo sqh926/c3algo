@@ -5,7 +5,7 @@
 
  @require concept::@is_comparator(Cmp, Key) : "Randomized heap requires a comparator with `before(a,b)`"
 *>
-module c3algo::ds::randheap <Key, Cmp>;
+module c3algo::collections::randomizedheap <Key, Cmp>;
 
 import c3algo::algebra::concept;
 import c3algo::random;
@@ -19,7 +19,7 @@ struct Node
 	Node*[2] child;
 }
 
-struct RandHeap
+struct RandomizedHeap
 {
 	Allocator allocator;
 	Node* root;
@@ -31,11 +31,11 @@ struct RandHeap
 
  @param [&inout] allocator : "The allocator nodes are taken from"
 
- @require !self.is_initialized() : "The RandHeap must not be initialized"
+ @require !self.is_initialized() : "The RandomizedHeap must not be initialized"
 
  @ensure self.root == null, self.size == 0
 *>
-fn RandHeap* RandHeap.init(&self, Allocator allocator)
+fn RandomizedHeap* RandomizedHeap.init(&self, Allocator allocator)
 {
 	self.allocator = allocator;
 	self.root = null;
@@ -44,20 +44,20 @@ fn RandHeap* RandHeap.init(&self, Allocator allocator)
 }
 
 <*
- Initialize an empty heap taking nodes from the temp allocator.
+ Initialize an empty heap with the temp allocator.
 
- @require !self.is_initialized() : "The RandHeap must not be initialized"
+ @require !self.is_initialized() : "The RandomizedHeap must not be initialized"
 
  @ensure self.root == null, self.size == 0
 *>
-fn RandHeap* RandHeap.tinit(&self) => self.init(tmem) @inline;
+fn RandomizedHeap* RandomizedHeap.tinit(&self) => self.init(tmem) @inline;
 
 <*
  Free every node and leave the heap uninitialized.
 
  @ensure !self.is_initialized()
 *>
-fn void RandHeap.free(&self)
+fn void RandomizedHeap.free(&self)
 {
 	if (!self.is_initialized()) return;
 	self.clear();
@@ -65,13 +65,13 @@ fn void RandHeap.free(&self)
 }
 
 <*
- Free every node, keeping the heap ready for reuse.
+ Free every node, but keep head initialized.
 
- @require self.is_initialized() : "The RandHeap must be initialized"
+ @require self.is_initialized() : "The RandomizedHeap must be initialized"
 
  @ensure self.root == null, self.size == 0
 *>
-fn void RandHeap.clear(&self)
+fn void RandomizedHeap.clear(&self)
 {
 	free_nodes(self.allocator, self.root);
 	self.root = null;
@@ -79,30 +79,30 @@ fn void RandHeap.clear(&self)
 }
 
 <*
- @return "True if the heap has an allocator to take nodes from"
+ @return "`true` if the heap has an allocator"
 *>
-fn bool RandHeap.is_initialized(&self) @inline => self.allocator != null;
+fn bool RandomizedHeap.is_initialized(&self) @inline => self.allocator != null;
 
 <*
  @return "The number of elements"
 *>
-fn sz RandHeap.len(&self) @inline => self.size;
+fn sz RandomizedHeap.len(&self) @inline => self.size;
 
 <*
- @return "True if the heap holds no elements"
+ @return "`true` if the heap holds no elements"
 *>
-fn bool RandHeap.is_empty(&self) @inline => self.root == null;
+fn bool RandomizedHeap.is_empty(&self) @inline => self.root == null;
 
 <*
  Insert an element.
 
  @param key : "The element to insert"
 
- @require self.is_initialized() : "The RandHeap must be initialized"
+ @require self.is_initialized() : "The RandomizedHeap must be initialized"
 
  @ensure self.size > 0
 *>
-fn void RandHeap.push(&self, Key key)
+fn void RandomizedHeap.push(&self, Key key)
 {
 	Node* node = alloc::new(self.allocator, Node);
 	node.key = key;
@@ -111,10 +111,10 @@ fn void RandHeap.push(&self, Key key)
 }
 
 <*
- @return "The element the comparator puts first, left in the heap"
+ @return "The element the comparator puts first, the element is left in the heap"
  @return? NO_MORE_ELEMENT
 *>
-fn Key? RandHeap.top(&self)
+fn Key? RandomizedHeap.top(&self)
 {
 	if (!self.root) return NO_MORE_ELEMENT~;
 	return self.root.key;
@@ -126,7 +126,7 @@ fn Key? RandHeap.top(&self)
  @return "The removed element"
  @return? NO_MORE_ELEMENT
 *>
-fn Key? RandHeap.pop(&self)
+fn Key? RandomizedHeap.pop(&self)
 {
 	Node* node = self.root;
 	if (!node) return NO_MORE_ELEMENT~;
@@ -138,7 +138,7 @@ fn Key? RandHeap.pop(&self)
 }
 
 <*
- Move every element of `other` into this heap, absorbing it in process.
+ Move every element of `other` into this heap, absorbing it in the process.
 
  @param [&inout] other : "The heap to absorb"
 
@@ -146,7 +146,7 @@ fn Key? RandHeap.pop(&self)
  @require self.allocator == other.allocator : "Both heaps must share an allocator"
  @require self != other : "A heap may not be merged into itself"
 *>
-fn void RandHeap.merge(&self, RandHeap* other)
+fn void RandomizedHeap.merge(&self, RandomizedHeap* other)
 {
 	self.root = merge_nodes(self.root, other.root);
 	self.size += other.size;
