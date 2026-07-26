@@ -192,7 +192,7 @@ fn sz BitSet.len(&self) @operator(len) @inline @nodiscard
 
  @param [&in] set : "The bitset to xor with"
 *>
-fn void BitSet.xor_assign(&self, BitSet* set @noalias) @inline
+fn void BitSet.xor_assign(&self, BitSet* set) @inline
 {
 	foreach (i, &x : self.data)
 	{
@@ -205,7 +205,7 @@ fn void BitSet.xor_assign(&self, BitSet* set @noalias) @inline
 
  @param [&in] set : "The bitset to or with"
 *>
-fn void BitSet.or_assign(&self, BitSet* set @noalias) @inline
+fn void BitSet.or_assign(&self, BitSet* set) @inline
 {
 	foreach (i, &x : self.data)
 	{
@@ -218,7 +218,7 @@ fn void BitSet.or_assign(&self, BitSet* set @noalias) @inline
 
  @param [&in] set : "The bitset to & with"
 *>
-fn void BitSet.and_assign(&self, BitSet* set @noalias) @inline
+fn void BitSet.and_assign(&self, BitSet* set) @inline
 {
 	foreach (i, &x : self.data)
 	{
@@ -235,7 +235,7 @@ fn void BitSet.and_assign(&self, BitSet* set @noalias) @inline
 
  @require hint < SIZE && hint >= 0 : "Index was out of range"
 *>
-fn BitSet BitSet.xor_hint(&self, BitSet* set @noalias, sz hint) @inline
+fn BitSet BitSet.xor_hint(&self, BitSet* set, sz hint) @inline
 {
 	for (sz i = hint / BITS; i < BLOCKS; i++)
 	{
