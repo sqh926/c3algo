@@ -4,7 +4,7 @@
 
  https://en.wikipedia.org/wiki/Xorshift
 *>
-module c3algo::util::rng;
+module c3algo::random;
 
 ulong state @local = 0xDEADBEEF;
 

@@ -2,7 +2,7 @@
 module c3algo::numtheory::factorize;
 
 import c3algo::arith;
-import c3algo::util::rng;
+import c3algo::random;
 import c3algo::numtheory::primality;
 import std::collections::list;
 import std::sort;
@@ -21,9 +21,9 @@ fn ulong get_divisor(ulong n) @local
 	const int BATCH = 128;
 	while (true)
 	{
-		ulong a = rng::next() % (n - 1) + 1;
+		ulong a = random::next() % (n - 1) + 1;
 		ulong b = a;
-		ulong c = rng::next() % (n - 2) + 2;
+		ulong c = random::next() % (n - 2) + 2;
 		ulong pa;
 		ulong pb;
 		ulong g = 1;

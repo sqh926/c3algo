@@ -8,7 +8,7 @@
 module c3algo::ds::randheap <Key, Cmp>;
 
 import c3algo::algebra::concept;
-import c3algo::util::rng;
+import c3algo::random;
 
 const int L = 0;
 const int R = 1;
@@ -158,7 +158,7 @@ fn Node* merge_nodes(Node* l, Node* r) @local
 {
 	if (!l || !r) return l ? l : r;
 	if (((Cmp) { }).before(r.key, l.key)) @swap(l, r);
-	int dir = (int)(rng::next() & 1);
+	int dir = (int)(random::next() & 1);
 	l.child[dir] = merge_nodes(l.child[dir], r);
 	return l;
 }

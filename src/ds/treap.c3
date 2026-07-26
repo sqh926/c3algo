@@ -14,7 +14,7 @@
 *>
 module c3algo::ds::implicittreap <Monoid, Action>;
 import c3algo::algebra::concept;
-import c3algo::util::rng;
+import c3algo::random;
 
 const int L = 0;
 const int R = 1;
@@ -31,7 +31,7 @@ struct Node
 }
 alias ImplicitTreap = Node*;
 
-fn int rand_prior() @local => (int)(rng::next() >> 33);
+fn int rand_prior() @local => (int)(random::next() >> 33);
 
 fn ImplicitTreap new_node(Monoid v)
 {
