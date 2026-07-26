@@ -1,7 +1,7 @@
 // @title Range Reverse Range Sum (Implicit Splay Tree)
 // PROBLEM: https://judge.yosupo.jp/problem/range_reverse_range_sum
 
-import c3algo::ds::splaytree;
+import c3algo::collections::splaytree;
 import c3algo::algebra;
 import c3algo::io;
 

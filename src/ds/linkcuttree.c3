@@ -4,7 +4,7 @@
  @require concept::@is_action(Action, Monoid)
 *>
 module c3algo::ds::lctree <Monoid, Action>;
-import c3algo::ds::splaytree;
+import c3algo::collections::splaytree;
 import c3algo::algebra::concept;
 
 const int L = 0;
