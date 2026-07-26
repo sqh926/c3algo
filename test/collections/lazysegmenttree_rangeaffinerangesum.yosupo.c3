@@ -5,26 +5,27 @@ import c3algo::collections::lazysegmenttree;
 import c3algo::algebra::affine;
 import c3algo::numbertheory::modint;
 import c3algo::io;
-import std::core::mem;
 
 alias Mint = ModInt{998244353};
-alias Agg = SumLen{Mint};
+alias Elem = SumLen{Mint};
 alias Map = Affine{Mint};
-alias Seg = LazySegmentTree{Agg, Map};
+alias Seg = LazySegmentTree{Elem, Map};
 
-fn Map map(long a, long b)
+const int OP_AFFINE = 0;
+
+fn Elem elem(long value)
+{
+	Elem res @noinit;
+	res.sum.init(value);
+	res.len.init(1);
+	return res;
+}
+
+fn Map affine_map(long a, long b)
 {
 	Map res @noinit;
 	res.a.init(a);
 	res.b.init(b);
-	return res;
-}
-
-fn Agg agg(long a, long b)
-{
-	Agg res @noinit;
-	res.sum.init(a);
-	res.len.init(b);
 	return res;
 }
 
@@ -33,40 +34,38 @@ fn void main()
 	FastInput inp;
 	inp.init();
 	defer inp.free();
+
 	FastOutput out;
 	out.init();
 	defer out.free();
 
-	int n = inp.read(int);
-	int q = inp.read(int);
+	sz n       = inp.read(sz);
+	sz queries = inp.read(sz);
 
-	Seg st @noinit;
-	st.init(mem, (sz)n);
-	defer st.free();
-
-	for (int i = 0; i < n; i++)
+	Elem[] values = alloc::new_array(tmem, Elem, n);
+	foreach (&v : values)
 	{
-		long a = inp.read(long);
-		st.set(i, agg(a, 1), 0, 0, st.size);
+		*v = elem(inp.read(long));
 	}
 
+	Seg st;
+	st.init_with(mem, values);
+	defer st.free();
 
-	while (q-- > 0)
+	while (queries-- > 0)
 	{
 		int kind = inp.read(int);
-		if (kind == 0)
+		sz l     = inp.read(sz);
+		sz r     = inp.read(sz);
+		if (kind == OP_AFFINE)
 		{
-			int l  = inp.read(int);
-			int r  = inp.read(int);
+			long a = inp.read(long);
 			long b = inp.read(long);
-			long c = inp.read(long);
-			st.update((sz)l, (sz)r, map(b, c), 0, 0, st.size);
+			st.update(l, r, affine_map(a, b));
 		}
 		else
 		{
-			int l = inp.read(int);
-			int r = inp.read(int);
-			out.writeln(st.range((sz)l, (sz)r, 0, 0, st.size).sum.val());
+			out.writeln(st.range(l, r).sum.val());
 		}
 	}
 }
