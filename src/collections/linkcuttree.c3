@@ -3,7 +3,7 @@
  @require concept::@is_monoid(Monoid)
  @require concept::@is_action(Action, Monoid)
 *>
-module c3algo::ds::lctree <Monoid, Action>;
+module c3algo::collections::linkcuttree <Monoid, Action>;
 import c3algo::collections::splaytree;
 import c3algo::algebra::concept;
 

@@ -1,19 +1,19 @@
 // @title Dynamic Tree Vertex Add Path Sum (Link-Cut Tree)
 // PROBLEM: https://judge.yosupo.jp/problem/dynamic_tree_vertex_add_path_sum
 
-import c3algo::ds::lctree;
+import c3algo::collections::linkcuttree;
 import c3algo::algebra;
 import c3algo::io;
 
 alias Sum = algebra::Sum{long};
 alias Empty = algebra::Empty{long};
 
-alias Node = lctree::Node{Sum, Empty};
-alias new_node = lctree::new_node{Sum, Empty};
-alias link = lctree::link{Sum, Empty};
-alias cut = lctree::cut{Sum, Empty};
-alias path_query = lctree::path_query{Sum, Empty};
-alias point_set = lctree::point_set{Sum, Empty};
+alias Node = linkcuttree::Node{Sum, Empty};
+alias new_node = linkcuttree::new_node{Sum, Empty};
+alias link = linkcuttree::link{Sum, Empty};
+alias cut = linkcuttree::cut{Sum, Empty};
+alias path_query = linkcuttree::path_query{Sum, Empty};
+alias point_set = linkcuttree::point_set{Sum, Empty};
 
 fn void main()
 {

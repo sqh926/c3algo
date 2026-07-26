@@ -1,7 +1,7 @@
 // @title Dynamic Tree Vertex Set Path Composite (Link-Cut Tree)
 // PROBLEM: https://judge.yosupo.jp/problem/dynamic_tree_vertex_set_path_composite
 
-import c3algo::ds::lctree;
+import c3algo::collections::linkcuttree;
 import c3algo::algebra::affine;
 import c3algo::numbertheory::modint;
 import c3algo::io;
@@ -10,12 +10,12 @@ alias Mint = ModInt{998244353};
 alias Func = Affine{Mint};
 alias Empty = c3algo::algebra::Empty{long};
 
-alias Node = lctree::Node{Func, Empty};
-alias new_node = lctree::new_node{Func, Empty};
-alias link = lctree::link{Func, Empty};
-alias cut = lctree::cut{Func, Empty};
-alias path_query = lctree::path_query{Func, Empty};
-alias point_set = lctree::point_set{Func, Empty};
+alias Node = linkcuttree::Node{Func, Empty};
+alias new_node = linkcuttree::new_node{Func, Empty};
+alias link = linkcuttree::link{Func, Empty};
+alias cut = linkcuttree::cut{Func, Empty};
+alias path_query = linkcuttree::path_query{Func, Empty};
+alias point_set = linkcuttree::point_set{Func, Empty};
 
 fn Func func(long a, long b)
 {
