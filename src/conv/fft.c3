@@ -2,7 +2,7 @@
 module c3algo::conv::fft <Real>;
 
 import std::math::complex, std::math, std::time;
-import c3algo::util::bpow;
+import c3algo::arith;
 
 alias Ftype = ComplexNumber{Real};
 
@@ -125,7 +125,7 @@ fn void convolution_mod(int[] dst, int[] a, int[] b, int mod, Allocator scratch 
 	// https://codeforces.com/blog/entry/142860
 	// helps to add randomness to the input
 	int factor   = 1 + (int)(splitmix64((ulong)time::now()) % (ulong)(mod - 1));
-	long ifactor = bpow::bpow(factor, mod - 2, mod);
+	long ifactor = arith::bpow(factor, mod - 2, mod);
 
 	Ftype[] fa   = alloc::new_array(scratch, Ftype, n);
 	Ftype[] fb   = alloc::new_array(scratch, Ftype, n);

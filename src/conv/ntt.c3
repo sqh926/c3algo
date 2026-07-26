@@ -3,7 +3,7 @@ module c3algo::conv::ntt <MOD>;
 
 import c3algo::numtheory::modint;
 import c3algo::numtheory::factorize;
-import c3algo::util::bpow;
+import c3algo::arith;
 import std::core::mem::alloc;
 
 alias Mint = modint::ModInt{MOD};
@@ -27,7 +27,7 @@ fn long primitive_root() @local
 		bool ok = true;
 		for (int i = 0; i < cnt; i++)
 		{
-			if (bpow::bpow(g, phi / primes[i], (ulong)MOD) == 1)
+			if (arith::bpow(g, phi / primes[i], (ulong)MOD) == 1)
 			{
 				ok = false;
 				break;
