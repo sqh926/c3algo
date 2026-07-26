@@ -1,32 +1,34 @@
 // @title Union Find
 // PROBLEM: https://judge.yosupo.jp/problem/unionfind
 
-import c3algo::ds::unionfind;
+import c3algo::collections::unionfind;
 import c3algo::io;
+
+const int OP_UNITE = 0;
 
 fn void main()
 {
-	FastInput inp @noinit;
+	FastInput inp;
 	inp.init();
 	defer inp.free();
 
-	FastOutput out @noinit;
+	FastOutput out;
 	out.init();
 	defer out.free();
 
-	int n = inp.read(int);
-	int q = inp.read(int);
+	sz n       = inp.read(sz);
+	sz queries = inp.read(sz);
 
 	UnionFind uf;
 	uf.init(mem, n);
 	defer uf.free();
 
-	for (int i = 0; i < q; i++)
+	while (queries-- > 0)
 	{
-		int t = inp.read(int);
-		int u = inp.read(int);
-		int v = inp.read(int);
-		if (t == 0)
+		int kind = inp.read(int);
+		sz u     = inp.read(sz);
+		sz v     = inp.read(sz);
+		if (kind == OP_UNITE)
 		{
 			uf.unite(u, v);
 		}

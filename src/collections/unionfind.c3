@@ -1,5 +1,5 @@
 // @title Union-Find
-module c3algo::ds::unionfind;
+module c3algo::collections::unionfind;
 
 struct UnionFind
 {
