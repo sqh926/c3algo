@@ -1,7 +1,7 @@
 // @title Ordered Set (AVL Tree)
 // PROBLEM: https://judge.yosupo.jp/problem/ordered_set
 
-import c3algo::ds::avltree;
+import c3algo::collections::avltree;
 import c3algo::io;
 
 alias Set = avltree::AVLTree{int};

@@ -2,7 +2,7 @@
 <*
  @require concept::@is_ordered(Key) : "AVL Tree requires Key to support <"
 *>
-module c3algo::ds::avltree <Key>;
+module c3algo::collections::avltree <Key>;
 import c3algo::algebra::concept;
 import std::math;
 
