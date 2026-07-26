@@ -17,7 +17,7 @@ fn void main()
 	int q = inp.read(int);
 	while (q-- > 0)
 	{
-		ulong n = inp.read(ulong);
+		ulong n           = inp.read(ulong);
 		UlongList factors = factorize::factorize(mem, n);
 		out.write(factors.len());
 		foreach (p : factors)

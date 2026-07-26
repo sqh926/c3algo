@@ -6,7 +6,7 @@ import c3algo::io;
 import std::collections::list;
 
 alias convolution = ntt::convolution{998244353};
-alias IntList     = List{int};
+alias IntList = List{int};
 
 fn void main()
 {

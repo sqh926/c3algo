@@ -18,7 +18,7 @@ fn void main()
 	int q = inp.read(int);
 
 	UnionFind uf;
-	uf.init((usz)n);
+	uf.init(mem, n);
 	defer uf.free();
 
 	for (int i = 0; i < q; i++)

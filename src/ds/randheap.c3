@@ -28,31 +28,35 @@ struct Node
 
 alias RandHeap = Node*;
 
-fn RandHeap new_node(Key key) {
-	Node *self = mem::new(Node);
+fn RandHeap new_node(Key key)
+{
+	Node* self = mem::new(Node);
 	self.key = key;
 	return self;
 }
 
-fn RandHeap merge(RandHeap l, RandHeap r) {
+fn RandHeap merge(RandHeap l, RandHeap r)
+{
 	if (!l || !r) return l ? l : r;
-	if (((Cmp){}).before(r.key, l.key)) @swap(l, r);
+	if (((Cmp) { }).before(r.key, l.key)) @swap(l, r);
 	int dir = (int)(rand() & 1);
 	l.child[dir] = merge(l.child[dir], r);
-	return l;	
+	return l;
 }
 
 fn bool is_empty(RandHeap* h) @inline => *h == null;
 fn void push(RandHeap* h, Key key) => *h = merge(*h, new_node(key));
 fn Key top(RandHeap* h) @inline => (*h).key;
 
-fn RandHeap pop_hint(RandHeap h) {
+fn RandHeap pop_hint(RandHeap h)
+{
 	RandHeap merged = merge(h.child[L], h.child[R]);
 	mem::free(h);
 	return merged;
 }
 
-fn Key pop(RandHeap *h) {
+fn Key pop(RandHeap* h)
+{
 	Key key = (*h).key;
 	*h = pop_hint(*h);
 	return key;
