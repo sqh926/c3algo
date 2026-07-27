@@ -13,12 +13,16 @@ import std::math;
 *>
 macro binary_gcd(a, b) @local
 {
-	if (a == 0) return math::abs(b);
-	if (b == 0) return math::abs(a);
-
 	var $Type = $Typeof(a);
-	$Type x = math::abs(a);
-	$Type y = math::abs(b);
+	$Type x = a;
+	$Type y = b;
+	$if types::is_signed($Type):
+		if (x < 0) x = -x;
+		if (y < 0) y = -y;
+	$endif
+
+	if (x == 0) return y;
+	if (y == 0) return x;
 
 	int az    = x.ctz();
 	int bz    = y.ctz();
