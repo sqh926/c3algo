@@ -6,10 +6,10 @@ import c3algo::io;
 fn void main()
 {
 	FastInput in;
-	in.init();
+	in.init(mem);
 	defer in.free();
 	FastOutput out;
-	out.init();
+	out.init(mem);
 	defer out.free();
 
 	int t = in.read(int);

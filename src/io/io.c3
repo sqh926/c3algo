@@ -1,59 +1,186 @@
 // @title Fast I/O
+<*
+ Buffered I/O.
+
+ `FastInput` reads the whole stream in `init` and parses out of that one buffer, so reading a
+ value costs nothing. `FastOutput` fills a buffer and hands it to the file descriptor in large
+ blocks, flushing whatever is left over in `free`.
+*>
 module c3algo::io;
-import std::core::mem;
-import std::core::types;
 import libc;
 
-const usz PAD = 64;
+<*
+ Zero padding kept behind the input so that the wide parsing loads may run past the last digit.
+*>
+const sz PAD @local = 64;
 
+<*
+ An upper bound on the bytes a single `write` may emit
+*>
+const sz MAX_VALUE_BYTES @local = 48;
+
+<*
+ The whole input stream held in one buffer, with `cur` on the next unread byte and `end` on the
+ last byte that came from the stream. Everything between `end` and the end of `buf` is padding.
+*>
 struct FastInput
 {
-	char* buf;
+	Allocator allocator;
+	char[] buf;
 	char* cur;
 	char* end;
 }
 
-fn void FastInput.init(&self, CInt fd = 0)
+<*
+ Read a stream to its end into a single buffer.
+
+ @param [&inout] allocator : "The allocator for the input buffer"
+ @param fd : "The file descriptor to read, standard input by default"
+
+ @require !self.is_initialized() : "The FastInput must not be initialized"
+
+ @ensure self.is_initialized()
+*>
+fn FastInput* FastInput.init(&self, Allocator allocator, CInt fd = 0)
 {
-	usz cap = 1 << 16;
-	usz len = 0;
-	char* b = libc::malloc(cap);
+	sz capacity  = 1 << 16;
+	sz length    = 0;
+	char* buffer = alloc::malloc(allocator, capacity);
 	while (true)
 	{
-		if (cap - len < (1 << 16))
+		if (capacity - length < (1 << 16))
 		{
-			cap *= 2;
-			b = libc::realloc(b, cap);
+			capacity *= 2;
+			buffer = alloc::realloc(allocator, buffer, capacity);
 		}
-		sz n = libc::read(fd, b + len, cap - len);
-		if (n <= 0) break;
-		len += (usz)n;
+		sz got = libc::read(fd, buffer + length, (usz)(capacity - length));
+		if (got <= 0) break;
+		length += got;
 	}
-	b = libc::realloc(b, len + PAD);
-	mem::set(b + len, 0, PAD);
-	self.buf = b;
-	self.cur = b;
-	self.end = b + len;
+	buffer = alloc::realloc(allocator, buffer, length + PAD);
+	mem::set(buffer + length, 0, (usz)PAD);
+	self.allocator = allocator;
+	self.buf = buffer[:length + PAD];
+	self.cur = buffer;
+	self.end = buffer + length;
+	return self;
 }
 
+<*
+ Read a stream to its end into a buffer taken from the temp allocator.
+
+ Values of type `String` read out of it point into that buffer, so they die with the temp scope.
+
+ @param fd : "The file descriptor to read, standard input by default"
+
+ @require !self.is_initialized() : "The FastInput must not be initialized"
+
+ @ensure self.is_initialized()
+*>
+fn FastInput* FastInput.tinit(&self, CInt fd = 0) @inline => self.init(tmem, fd);
+
+<*
+ Release the buffer and leave the struct uninitialized.
+
+ @ensure !self.is_initialized()
+*>
 fn void FastInput.free(&self)
 {
-	if (self.buf) libc::free(self.buf);
+	if (!self.is_initialized()) return;
+	alloc::free(self.allocator, self.buf.ptr);
 	*self = { };
 }
 
+<*
+ @return "`true` if the input holds a buffer"
+*>
+fn bool FastInput.is_initialized(&self) @inline => self.allocator != null;
+
+<*
+ Step over whitespace, stopping on the first printable byte or at the end of the input.
+
+ @require self.is_initialized() : "The FastInput must be initialized"
+*>
+macro void FastInput.skip_space(&self)
+{
+	while (self.cur < self.end && *self.cur < 33) self.cur++;
+}
+
+<*
+ Step over whitespace and report whether the input is exhausted.
+
+ @return "`true` if nothing but whitespace is left"
+
+ @require self.is_initialized() : "The FastInput must be initialized"
+*>
 fn bool FastInput.eof(&self)
 {
 	self.skip_space();
 	return self.cur >= self.end;
 }
 
-macro void FastInput.skip_space(&self)
+<*
+ Read one whitespace separated value.
+
+ @param $Type : "The type to read"
+
+ @require self.is_initialized() : "The FastInput must be initialized"
+
+ @return "The value read"
+*>
+macro FastInput.read(&self, $Type)
 {
-	while (self.cur < self.end && *self.cur < 33) self.cur++;
+	self.skip_space();
+	$switch $Type:
+		$case bool:
+			char b = *self.cur;
+			self.cur += 2;
+			return b == '1';
+		$case char:
+			return read_char(self);
+		$case ichar:
+			return (ichar)read_char(self);
+		$case String:
+			return read_string(self);
+		$default:
+			$if types::is_signed($Type):
+				bool neg = *self.cur == '-';
+				self.cur += (usz)neg;
+				$if $Type::size <= 8:
+					ulong v = read_u64(self);
+					return ($Type)(neg ? (ulong)(-(long)v) : v);
+				$else
+					uint128 v = read_u128(self);
+					return ($Type)(neg ? (uint128)(-(int128)v) : v);
+				$endif
+			$else
+				$if $Type::size <= 8:
+					return ($Type)read_u64(self);
+				$else
+					return ($Type)read_u128(self);
+				$endif
+			$endif
+	$endswitch
 }
 
-fn ulong FastInput.read_u64(&self)
+<*
+ Read one whitespace separated value into an existing variable, taking its type from the pointer.
+
+ @param [&out] ptr : "Where to put the value read"
+
+ @require self.is_initialized() : "The FastInput must be initialized"
+*>
+macro void FastInput.read_into(&self, ptr)
+{
+	*ptr = self.read($Typeof(*ptr));
+}
+
+<*
+ Parse an unsigned decimal number, eight digits at a time.
+
+ @require self.cur < self.end : "The input is exhausted"
+*>
+fn ulong read_u64(FastInput* self) @local
 {
 	char* c = self.cur;
 	ulong x = 0;
@@ -84,7 +211,12 @@ fn ulong FastInput.read_u64(&self)
 	return x;
 }
 
-fn uint128 FastInput.read_u128(&self)
+<*
+ Parse an unsigned decimal number into 128 bits, eight digits at a time.
+
+ @require self.cur < self.end : "The input is exhausted"
+*>
+fn uint128 read_u128(FastInput* self) @local
 {
 	char* c   = self.cur;
 	uint128 x = 0;
@@ -115,14 +247,26 @@ fn uint128 FastInput.read_u128(&self)
 	return x;
 }
 
-fn char FastInput.read_char(&self)
+<*
+ Take one byte and step over the separator behind it.
+
+ @require self.cur < self.end : "The input is exhausted"
+*>
+fn char read_char(FastInput* self) @local
 {
 	char x = *self.cur;
 	self.cur += 2;
 	return x;
 }
 
-fn String FastInput.read_string(&self)
+<*
+ Take the bytes up to the next whitespace.
+
+ @require self.cur < self.end : "The input is exhausted"
+
+ @return "A view into the input buffer, valid until the input is freed"
+*>
+fn String read_string(FastInput* self) @local
 {
 	char* first = self.cur;
 	while (*self.cur > 32) self.cur++;
@@ -131,54 +275,196 @@ fn String FastInput.read_string(&self)
 	return s;
 }
 
-macro FastInput.read(&self, $Type)
+<*
+ Bytes pending a write, with `cur` on the first free byte and `end` on the end of `buf`.
+*>
+struct FastOutput
 {
-	self.skip_space();
+	Allocator allocator;
+	CInt fd;
+	char[] buf;
+	char* cur;
+	char* end;
+}
+
+<*
+ Take a buffer to collect output in.
+
+ @param [&inout] allocator : "The allocator for the output buffer"
+ @param fd : "The file descriptor to write to, standard output by default"
+ @param capacity : "The size of the buffer in bytes"
+
+ @require !self.is_initialized() : "The FastOutput must not be initialized"
+ @require capacity >= MAX_VALUE_BYTES : "The buffer must be able to hold the longest single value"
+
+ @ensure self.is_initialized()
+*>
+fn FastOutput* FastOutput.init(&self, Allocator allocator, CInt fd = 1, sz capacity = 1 << 19)
+{
+	self.allocator = allocator;
+	self.fd = fd;
+	self.buf = alloc::alloc_array(allocator, char, capacity);
+	self.cur = self.buf.ptr;
+	self.end = self.buf.ptr + capacity;
+	return self;
+}
+
+<*
+ Take a buffer from the temp allocator to collect output in.
+
+ @param fd : "The file descriptor to write to, standard output by default"
+ @param capacity : "The size of the buffer in bytes"
+
+ @require !self.is_initialized() : "The FastOutput must not be initialized"
+ @require capacity >= MAX_VALUE_BYTES : "The buffer must be able to hold the longest single value"
+
+ @ensure self.is_initialized()
+*>
+fn FastOutput* FastOutput.tinit(&self, CInt fd = 1, sz capacity = 1 << 19) @inline => self.init(tmem, fd, capacity);
+
+<*
+ Hand everything buffered so far to the file descriptor.
+
+ @require self.is_initialized() : "The FastOutput must be initialized"
+
+ @ensure self.cur == self.buf.ptr
+*>
+fn void FastOutput.flush(&self)
+{
+	usz n = (usz)(self.cur - self.buf.ptr);
+	if (n) libc::write(self.fd, self.buf.ptr, n);
+	self.cur = self.buf.ptr;
+}
+
+<*
+ Flush, release the buffer and leave the output uninitialized.
+
+ @ensure !self.is_initialized()
+*>
+fn void FastOutput.free(&self)
+{
+	if (!self.is_initialized()) return;
+	self.flush();
+	alloc::free(self.allocator, self.buf.ptr);
+	*self = { };
+}
+
+<*
+ @return "`true` if the output holds a buffer"
+*>
+fn bool FastOutput.is_initialized(&self) @inline => self.allocator != null;
+
+<*
+ Write one value.
+
+ `bool` is written as a single `0` or `1`, `char` and `ichar` as one byte, `String` and null
+ terminated strings as their bytes, and every other integer type as a decimal number.
+
+ @param x : "The value to write"
+
+ @require self.is_initialized() : "The FastOutput must be initialized"
+*>
+macro void FastOutput.write(&self, x)
+{
+	var $Type = $Typeof(x);
 	$switch $Type:
 		$case bool:
-			char b = *self.cur;
-			self.cur += 2;
-			return b == '1';
+			reserve(self, 1);
+			*self.cur++ = x ? '1' : '0';
 		$case char:
-			return self.read_char();
+			reserve(self, 1);
+			*self.cur++ = x;
 		$case ichar:
-			return (ichar)self.read_char();
+			reserve(self, 1);
+			*self.cur++ = (char)x;
 		$case String:
-			return self.read_string();
+			self.write_bytes(x);
+		$case char*:
+			self.write_bytes((String)x[:libc::strlen(x)]);
+		$case ichar*:
+			self.write_bytes((String)((char*)x)[:libc::strlen((char*)x)]);
 		$default:
+			reserve(self, MAX_VALUE_BYTES);
 			$if types::is_signed($Type):
-				bool neg = *self.cur == '-';
-				self.cur += (usz)neg;
+				if (x < 0) *self.cur++ = '-';
 				$if $Type::size <= 8:
-					ulong v = self.read_u64();
-					return ($Type)(neg ? (ulong)(-(long)v) : v);
+					write_u64(self, x < 0 ? (ulong)(-(long)x) : (ulong)x);
 				$else
-					uint128 v = self.read_u128();
-					return ($Type)(neg ? (uint128)(-(int128)v) : v);
+					write_u128(self, x < 0 ? (uint128)(-(int128)x) : (uint128)x);
 				$endif
 			$else
 				$if $Type::size <= 8:
-					return ($Type)self.read_u64();
+					write_u64(self, (ulong)x);
 				$else
-					return ($Type)self.read_u128();
+					write_u128(self, (uint128)x);
 				$endif
 			$endif
 	$endswitch
 }
 
-macro void FastInput.read_into(&self, ptr)
+<*
+ Write one value and a newline.
+
+ @param x : "The value to write"
+
+ @require self.is_initialized() : "The FastOutput must be initialized"
+*>
+macro void FastOutput.writeln(&self, x)
 {
-	*ptr = self.read($Typeof(*ptr));
+	self.write(x);
+	self.nl();
 }
 
-tlocal char[4][10000] full_lut @private;
-tlocal char[4][10000] head_lut @private;
-tlocal char[10000] head_len @private;
-tlocal bool lut_ready @private;
+<*
+ Write the bytes of a string, going straight to the file descriptor if it outgrows the buffer.
 
-fn void build_lut() @private
+ @param s : "The bytes to write"
+
+ @require self.is_initialized() : "The FastOutput must be initialized"
+*>
+fn void FastOutput.write_bytes(&self, String s)
 {
-	if (lut_ready) return;
+	sz len = (sz)s.len;
+	if (len >= (sz)self.buf.len)
+	{
+		self.flush();
+		libc::write(self.fd, s.ptr, s.len);
+		return;
+	}
+	reserve(self, len);
+	mem::copy(self.cur, s.ptr, len, $dst_align: 1, $src_align: 1);
+	self.cur += len;
+}
+
+<*
+ Write a space.
+
+ @require self.is_initialized() : "The FastOutput must be initialized"
+*>
+macro void FastOutput.sp(&self)
+{
+	reserve(self, 1);
+	*self.cur++ = ' ';
+}
+
+<*
+ Write a newline.
+
+ @require self.is_initialized() : "The FastOutput must be initialized"
+*>
+macro void FastOutput.nl(&self)
+{
+	reserve(self, 1);
+	*self.cur++ = '\n';
+}
+
+char[4][10000] full_lut @local;
+char[4][10000] head_lut @local;
+char[10000] head_len @local;
+
+
+fn void build_lut() @init @local
+{
 	for (int i = 0; i < 10000; i++)
 	{
 		full_lut[i][0] = (char)('0' + i / 1000);
@@ -189,79 +475,47 @@ fn void build_lut() @private
 		head_len[i] = (char)len;
 		for (int j = 0; j < len; j++) head_lut[i][j] = full_lut[i][4 - len + j];
 	}
-	lut_ready = true;
 }
 
-struct FastOutput
+<*
+ Make room for `need` bytes, flushing the buffer if it holds too much already.
+
+ @param need : "The number of bytes about to be written"
+
+ @require need <= (sz)self.buf.len : "The buffer is too small to ever hold that many bytes"
+
+ @ensure self.end - self.cur >= need
+*>
+macro void reserve(FastOutput* self, sz need) @local
 {
-	CInt fd;
-	char* buf;
-	char* cur;
-	char* end;
-	usz cap;
+	if (self.end - self.cur < need) self.flush();
 }
 
-fn void FastOutput.init(&self, CInt fd = 1, usz cap = 1 << 19)
-{
-	build_lut();
-	self.fd = fd;
-	self.buf = libc::malloc(cap);
-	self.cur = self.buf;
-	self.end = self.buf + cap;
-	self.cap = cap;
-}
+<*
+ Write `x` as `$g + 1` groups of four digits, the first one trimmed to its own width.
 
-fn void FastOutput.flush(&self)
-{
-	usz n = (usz)(self.cur - self.buf);
-	if (n) libc::write(self.fd, self.buf, n);
-	self.cur = self.buf;
-}
-
-fn void FastOutput.free(&self)
-{
-	if (self.buf)
-	{
-		self.flush();
-		libc::free(self.buf);
-	}
-	*self = { };
-}
-
-macro void FastOutput.reserve(&self, usz need)
-{
-	if ((usz)(self.end - self.cur) < need) self.flush();
-}
-
-macro void FastOutput.@groups(&self, $g, x)
+ @param $g : "The number of full four digit groups behind the leading one"
+ @param x : "The value to write, below `10000 ^ ($g + 1)`"
+*>
+macro void @groups(FastOutput* self, $g, x) @local
 {
 	$switch:
 		$case $g == 0:
 			mem::copy(self.cur, &head_lut[x], 4, $dst_align: 1);
 			self.cur += head_len[x];
 		$default:
-			self.@groups($g - 1, x / 10000);
+			@groups(self, $g - 1, x / 10000);
 			mem::copy(self.cur, &full_lut[x % 10000], 4, $dst_align: 1);
 			self.cur += 4;
 	$endswitch
 }
 
-fn void FastOutput.write_u64(&self, ulong x)
-{
-	switch
-	{
-		case x > 9_999_999_999_999_999: self.@groups(4, x);
-		case x > 999_999_999_999: self.@groups(3, x);
-		case x > 99_999_999: self.@groups(2, x);
-		case x > 9999: self.@groups(1, (uint)x);
-		default: self.@groups(0, (uint)x);
-	}
-}
+<*
+ Write `x` as exactly sixteen digits.
 
-const uint128 E19 = 10_000_000_000_000_000_000;
-const uint128 E38 = E19 * E19;
-
-macro void FastOutput.@groups16(&self, x)
+ @param x : "The value to write, below `10 ^ 16`"
+*>
+macro void @groups16(FastOutput* self, x) @local
 {
 	mem::copy(self.cur, &full_lut[x / 1_000_000_000_000 % 10000], 4, $dst_align: 1);
 	self.cur += 4;
@@ -273,49 +527,102 @@ macro void FastOutput.@groups16(&self, x)
 	self.cur += 4;
 }
 
-fn void FastOutput.write_w19(&self, ulong x)
+<*
+ Write a number in as few digits as it needs.
+*>
+fn void write_u64(FastOutput* self, ulong x) @local
+{
+	switch
+	{
+		case x > 9_999_999_999_999_999: @groups(self, 4, x);
+		case x > 999_999_999_999: @groups(self, 3, x);
+		case x > 99_999_999: @groups(self, 2, x);
+		case x > 9999: @groups(self, 1, (uint)x);
+		default: @groups(self, 0, (uint)x);
+	}
+}
+
+const uint128 E19 @local = 10_000_000_000_000_000_000;
+const uint128 E38 @local = E19 * E19;
+
+<*
+ Write a number as exactly nineteen digits, zero padded.
+
+ @param x : "The value to write, below `10 ^ 19`"
+
+ @require x < (ulong)E19 : "A larger value does not fit in nineteen digits"
+*>
+fn void write_w19(FastOutput* self, ulong x) @local
 {
 	ulong top  = x / 10_000_000_000_000_000;
 	ulong rest = x % 10_000_000_000_000_000;
 	mem::copy(self.cur, &full_lut[top][1], 3, $dst_align: 1);
 	self.cur += 3;
-	self.@groups16(rest);
+	@groups16(self, rest);
 }
 
-// For some reason compiler cant optimize x / E19 and uses __udivti3
-// here we explicitly use divq for dividing u128 over u64
+<*
+ `ceil(2 ^ 191 / 10 ^ 19)`
+*>
+const uint128 E19_CONST @local = 0xec1e4a7db69561a52b31e9e3d06c32e6;
+
+<*
+ The top half of a 256 bit product
+
+ @param a : "The first factor"
+ @param b : "The second factor"
+
+ @return "`(a * b) >> 128`"
+*>
+fn uint128 mul_high(uint128 a, uint128 b) @local @inline
+{
+	ulong a_low  = (ulong)a;
+	ulong a_high = (ulong)(a >> 64);
+	ulong b_low  = (ulong)b;
+	ulong b_high = (ulong)(b >> 64);
+
+	uint128 low   = (uint128)a_low * b_low;
+	uint128 mid   = (uint128)a_low * b_high;
+	uint128 mid2  = (uint128)a_high * b_low;
+	uint128 high  = (uint128)a_high * b_high;
+	uint128 carry = (low >> 64) + (ulong)mid + (ulong)mid2;
+
+	return high + (mid >> 64) + (mid2 >> 64) + (carry >> 64);
+}
+
+<*
+ Divide by `10 ^ 19`.
+
+ Compiler cannot optimize it itself, and produces `__udivti3` assembly intstruction, which is too slow for our needs.
+
+ `x * E19_CONST >> 191` = `x / 10 ^ 19`
+ @param x : "The value to divide"
+
+ @require (x >> 64) < E19 : "The quotient has to fit in 64 bits"
+
+ @return "The quotient and the remainder"
+*>
 fn ulong[2] divmod_1e19(uint128 x) @local @inline
 {
-	$if env::X86_64:
-		ulong hi = (ulong)(x >> 64);
-		ulong lo = (ulong)x;
-		ulong d  = 10_000_000_000_000_000_000;
-		ulong q, r;
-		asm
-		{
-			movq $rax, lo;
-			movq $rdx, hi;
-			divq d;
-			movq q, $rax;
-			movq r, $rdx;
-		}
-		return { q, r };
-	$else
-		return { (ulong)(x / E19), (ulong)(x % E19) };
-	$endif
+	ulong q = (ulong)(mul_high(x, E19_CONST) >> 63);
+	ulong r = (ulong)(x - (uint128)q * (ulong)E19);
+	return { q, r };
 }
 
-fn void FastOutput.write_u128(&self, uint128 x)
+<*
+ Write a number in as few digits as it needs, splitting it into chunks of nineteen digits.
+*>
+fn void write_u128(FastOutput* self, uint128 x) @local
 {
 	if (x < E19)
 	{
-		self.write_u64((ulong)x);
+		write_u64(self, (ulong)x);
 	}
 	else if (x < E38)
 	{
 		ulong[2] qr = divmod_1e19(x);
-		self.write_u64(qr[0]);
-		self.write_w19(qr[1]);
+		write_u64(self, qr[0]);
+		write_w19(self, qr[1]);
 	}
 	else
 	{
@@ -331,77 +638,7 @@ fn void FastOutput.write_u128(&self, uint128 x)
 		x -= (uint128)top * E38;
 		ulong[2] qr = divmod_1e19(x);
 		*self.cur++ = (char)('0' + top);
-		self.write_w19(qr[0]);
-		self.write_w19(qr[1]);
+		write_w19(self, qr[0]);
+		write_w19(self, qr[1]);
 	}
-}
-
-macro void FastOutput.write(&self, x)
-{
-	var $Type = $Typeof(x);
-	$switch $Type:
-		$case bool:
-			self.reserve(1);
-			*self.cur++ = x ? '1' : '0';
-		$case char:
-			self.reserve(1);
-			*self.cur++ = x;
-		$case ichar:
-			self.reserve(1);
-			*self.cur++ = (char)x;
-		$case String:
-			self.write_bytes(x);
-		$case char*:
-			self.write_bytes((String)x[:libc::strlen(x)]);
-		$case ichar*:
-			self.write_bytes((String)((char*)x)[:libc::strlen((char*)x)]);
-		$default:
-			self.reserve(48);
-			$if types::is_signed($Type):
-				if (x < 0) *self.cur++ = '-';
-				$if $Type::size <= 8:
-					self.write_u64(x < 0 ? (ulong)(-(long)x) : (ulong)x);
-				$else
-					self.write_u128(x < 0 ? (uint128)(-(int128)x) : (uint128)x);
-				$endif
-			$else
-				$if $Type::size <= 8:
-					self.write_u64((ulong)x);
-				$else
-					self.write_u128((uint128)x);
-				$endif
-			$endif
-	$endswitch
-}
-
-fn void FastOutput.write_bytes(&self, String s)
-{
-	usz len = s.len;
-	if (len >= self.cap)
-	{
-		self.flush();
-		libc::write(self.fd, s.ptr, len);
-		return;
-	}
-	self.reserve(len);
-	mem::copy(self.cur, s.ptr, (sz)len, $dst_align: 1, $src_align: 1);
-	self.cur += (sz)len;
-}
-
-macro void FastOutput.writeln(&self, x)
-{
-	self.write(x);
-	self.nl();
-}
-
-macro void FastOutput.sp(&self)
-{
-	self.reserve(1);
-	*self.cur++ = ' ';
-}
-
-macro void FastOutput.nl(&self)
-{
-	self.reserve(1);
-	*self.cur++ = '\n';
 }

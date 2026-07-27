@@ -14,13 +14,13 @@ int[MAXN] lead;
 fn void main()
 {
 	FastInput inp @noinit;
-	inp.init();
+	inp.init(mem);
 	defer inp.free();
 
 	int n = inp.read(int);
 	for (int i = 0; i < n; i++)
 	{
-		String s = inp.read_string();
+		String s = inp.read(String);
 		foreach (k, c : s) if (c == '1') a[i].set(k);
 
 		for (int j = 0; j < i; j++)

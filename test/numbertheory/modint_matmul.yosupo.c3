@@ -14,10 +14,10 @@ Mint[MAXN][MAXN] c;
 fn void main()
 {
 	FastInput inp;
-	inp.init();
+	inp.init(mem);
 	defer inp.free();
 	FastOutput out;
-	out.init();
+	out.init(mem);
 	defer out.free();
 
 	int n = inp.read(int);
@@ -28,14 +28,14 @@ fn void main()
 	{
 		for (int j = 0; j < t; j++)
 		{
-			a[i][j].init((long)inp.read_u64());
+			a[i][j].init(inp.read(long));
 		}
 	}
 	for (int i = 0; i < t; i++)
 	{
 		for (int j = 0; j < m; j++)
 		{
-			b[i][j].init((long)inp.read_u64());
+			b[i][j].init(inp.read(long));
 		}
 	}
 

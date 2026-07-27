@@ -10,10 +10,10 @@ alias from_string = bigint::from_string{10};
 fn void main()
 {
 	FastInput inp;
-	inp.init();
+	inp.init(mem);
 	defer inp.free();
 	FastOutput out;
-	out.init();
+	out.init(mem);
 	defer out.free();
 	int t = inp.read(int);
 	for (int q = 0; q < t; q++)

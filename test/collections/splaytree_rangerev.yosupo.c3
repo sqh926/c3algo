@@ -22,11 +22,11 @@ const int OP_REVERSE = 0;
 fn void main()
 {
 	FastInput inp;
-	inp.init();
+	inp.init(mem);
 	defer inp.free();
 
 	FastOutput out;
-	out.init();
+	out.init(mem);
 	defer out.free();
 
 	sz n       = inp.read(sz);
