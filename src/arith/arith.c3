@@ -1,12 +1,17 @@
 // @title Arithmetic
 <*
- Binary gcd, modular exponentiation and modular multiplication.
+ Binary gcd, modular multiplication and modular exponentiation.
 *>
 module c3algo::arith;
 
 import std::math;
 
-macro _gcd(a, b)
+<*
+ The binary gcd
+
+ @return "The greatest common divisor of `a` and `b`, never negative"
+*>
+macro binary_gcd(a, b) @local
 {
 	if (a == 0) return math::abs(b);
 	if (b == 0) return math::abs(a);
@@ -32,6 +37,9 @@ macro _gcd(a, b)
 	return y << shift;
 }
 
+<*
+ @return "The greatest common divisor of every argument"
+*>
 macro gcd(...)
 {
 	$Typeof($vaarg[0]) result = $vaarg[0];
@@ -39,12 +47,27 @@ macro gcd(...)
 		$if $defined(result.gcd):
 			result = result.gcd($vaarg[$i]);
 		$else
-			result = _gcd($vaarg[$i], result);
+			result = binary_gcd($vaarg[$i], result);
 		$endif
 	$endfor
 	return result;
 }
 
+<*
+ Multiply two residues modulo `m`.
+
+ Both operands have to be reduced already
+
+ @param a : "The first factor, below `m`"
+ @param b : "The second factor, below `m`"
+ @param m : "The modulus"
+
+ @require m > 0 : "The modulus must be positive"
+ @require a < m : "The first factor must be reduced already"
+ @require b < m : "The second factor must be reduced already"
+
+ @return "`a * b` modulo `m`"
+*>
 macro mulmod(a, b, m)
 {
 	var $Mod = $Typeof(m);
@@ -58,15 +81,7 @@ macro mulmod(a, b, m)
 				return ($Mod)((ulong)a * (ulong)b % (ulong)m);
 			$endif
 		$case $Mod::size <= 8:
-			$if env::X86_64:
-				return ($Mod)mulmod_u64((ulong)a, (ulong)b, (ulong)m);
-			$else
-				$if types::is_signed($Mod):
-					return ($Mod)((int128)a * (int128)b % (int128)m);
-				$else
-					return ($Mod)((uint128)a * (uint128)b % (uint128)m);
-				$endif
-			$endif
+			return ($Mod)mulmod_u64((ulong)a, (ulong)b, (ulong)m);
 		$default:
 			$Mod result = 0;
 			$Mod x      = a % m;
@@ -86,29 +101,81 @@ macro mulmod(a, b, m)
 	$endswitch
 }
 
+<*
+ The remainder of a 128 bit product divided by a 64 bit modulus, out of two 64 bit divisions.
 
+ https://github.com/hcs0/Hackers-Delight/blob/master/divlu.c.txt
+
+ @param a : "The first factor, below `m`"
+ @param b : "The second factor, below `m`"
+ @param m : "The modulus"
+
+ @require m > 0 : "The modulus must be positive"
+ @require a < m : "The first factor must be reduced already"
+ @require b < m : "The second factor must be reduced already"
+
+ @ensure return < m
+*>
 fn ulong mulmod_u64(ulong a, ulong b, ulong m) @local @inline
 {
-	uint128 prod = (uint128)a * b;
-	ulong hi     = (ulong)(prod >> 64);
-	ulong lo     = (ulong)prod;
-	ulong r;
-	asm
+	const ulong BASE = 1UL << 32;
+
+	uint128 product = (uint128)a * b;
+	ulong u1        = (ulong)(product >> 64);
+	ulong u0        = (ulong)product;
+
+	int s     = (int)m.clz();
+	ulong v   = m << s;
+	ulong vn1 = v >> 32;
+	ulong vn0 = v & 0xFFFFFFFF;
+
+	ulong un32 = s == 0 ? u1 : (u1 << s) | (u0 >> (64 - s));
+	ulong un10 = u0 << s;
+	ulong un1  = un10 >> 32;
+	ulong un0  = un10 & 0xFFFFFFFF;
+
+	ulong q1   = un32 / vn1;
+	ulong rhat = un32 - q1 * vn1;
+	while (q1 >= BASE || q1 * vn0 > BASE * rhat + un1)
 	{
-		movq $rax, lo;
-		movq $rdx, hi;
-		divq m;
-		movq r, $rdx;
+		q1--;
+		rhat += vn1;
+		if (rhat >= BASE) break;
 	}
-	return r;
+
+	ulong un21 = un32 * BASE + un1 - q1 * v;
+	ulong q0   = un21 / vn1;
+	rhat = un21 - q0 * vn1;
+	while (q0 >= BASE || q0 * vn0 > BASE * rhat + un0)
+	{
+		q0--;
+		rhat += vn1;
+		if (rhat >= BASE) break;
+	}
+
+	return (un21 * BASE + un0 - q0 * v) >> s;
 }
 
+<*
+ Raise to a power modulo `m` by repeated squaring.
 
+ @param a : "The base"
+ @param n : "The exponent, not negative"
+ @param m : "The modulus"
+
+ @require n >= 0 : "A negative exponent would never terminate"
+ @require m > 0 : "The modulus must be positive"
+
+ @return "`a` to the power of `n` modulo `m`"
+*>
 macro bpow(a, n, m)
 {
 	var $Mod = $Typeof(m);
-	$Mod result = 1;
-	$Mod base   = a % m;
+	$Mod base = a % m;
+	$if types::is_signed($Mod):
+		if (base < 0) base += m;
+	$endif
+	$Mod result = 1 % m;
 	var exp = n;
 	while (exp != 0)
 	{
