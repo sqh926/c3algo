@@ -1,4 +1,9 @@
 // @title NTT
+<*
+ The number theoretic transform
+
+ @require MOD > 2 : "The modulus must be an odd prime"
+*>
 module c3algo::convolution::ntt <MOD>;
 
 import c3algo::numbertheory::modint;
@@ -9,9 +14,19 @@ import std::core::mem::alloc;
 alias Mint = modint::ModInt{MOD};
 alias from = modint::from{MOD};
 
+<*
+ The longest transform this modulus admits
+*>
+const usz MAX_LENGTH = (usz)(((ulong)MOD - 1) & (0 - ((ulong)MOD - 1)));
+
+<*
+ The smallest generator of the multiplicative group.
+
+ @return "The smallest primitive root modulo `MOD`"
+*>
 fn long primitive_root() @local
 {
-	ulong phi                 = (ulong)MOD - 1; // assuming `MOD` is prime.
+	ulong phi                 = (ulong)MOD - 1;
 	factorize::UlongList facs = factorize::factorize(mem, phi);
 	defer facs.free();
 
@@ -37,10 +52,20 @@ fn long primitive_root() @local
 	}
 }
 
+<*
+ Transform in place.
+
+ @param [inout] in : "The values to transform, a power of two of them"
+ @param inverse : "Whether to run the inverse transform"
+
+ @require in.len > 0 : "There is nothing to transform"
+ @require (in.len & (in.len - 1)) == 0 : "The length has to be a power of two"
+ @require in.len <= MAX_LENGTH : "This modulus has no root of unity of that order"
+*>
 fn void ntt_inplace(Mint[] in, bool inverse)
 {
 	int n    = (int)in.len;
-	int logn = n.ctz();
+	int half = n >> 1;
 
 	static int[] rev;
 	if (rev.len != n)
@@ -49,7 +74,7 @@ fn void ntt_inplace(Mint[] in, bool inverse)
 		rev = mem::new_array(int, n);
 		for (int i = 0; i < n; i++)
 		{
-			rev[i] = (rev[i >> 1] >> 1) | ((i & 1) << (logn - 1));
+			rev[i] = (rev[i >> 1] >> 1) | ((i & 1) == 0 ? 0 : half);
 		}
 	}
 	for (int i = 0; i < n; i++)
@@ -61,10 +86,9 @@ fn void ntt_inplace(Mint[] in, bool inverse)
 	if (root == 0) root = primitive_root();
 
 	static Mint[] w;
-	if (w.len != n / 2)
+	if (half != 0 && w.len != half)
 	{
 		if (w.len != 0) mem::free(w);
-		int half = n / 2;
 		w = mem::new_array(Mint, half);
 		Mint g    = from(root);
 		Mint wlen = g.pow((MOD - 1) / n);
@@ -103,6 +127,19 @@ fn void ntt_inplace(Mint[] in, bool inverse)
 	}
 }
 
+<*
+ Convolve two sequences of residues modulo `MOD`, exactly.
+
+ Unlike the floating point route there is no rounding to worry about here.
+
+ @param [out] dst : "Where the result goes, at least `a.len + b.len - 1` long"
+ @param [in] a : "The first sequence"
+ @param [in] b : "The second sequence"
+ @param [&inout] scratch : "The allocator for the transform buffers"
+
+ @require a.len == 0 || b.len == 0 || dst.len >= a.len + b.len - 1 : "The result does not fit into dst"
+ @require a.len == 0 || b.len == 0 || a.len + b.len - 1 <= MAX_LENGTH : "This modulus has no root of unity of that order"
+*>
 fn void convolution(int[] dst, int[] a, int[] b, Allocator scratch = mem)
 {
 	int na = (int)a.len;
