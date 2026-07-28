@@ -5,7 +5,6 @@ import c3algo::bigint;
 import c3algo::io;
 
 alias DynBigInt = bigint::DynBigInt{16};
-alias from_string = bigint::from_string{16};
 
 fn void main()
 {
@@ -21,8 +20,10 @@ fn void main()
 	{
 		@pool()
 		{
-			DynBigInt x = from_string(inp.read(String), tmem);
-			DynBigInt y = from_string(inp.read(String), tmem);
+			DynBigInt x;
+			x.tinit_with(inp.read(String));
+			DynBigInt y;
+			y.tinit_with(inp.read(String));
 			out.writeln((x * y).to_string(tmem));
 		};
 	}

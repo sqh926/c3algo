@@ -1,10 +1,10 @@
-// @title Big Integer Multiplication
-// PROBLEM: https://judge.yosupo.jp/problem/multiplication_of_big_integers
+// @title Big Integer Division (hex)
+// PROBLEM: https://judge.yosupo.jp/problem/division_of_hex_big_integers
 
 import c3algo::bigint;
 import c3algo::io;
 
-alias DynBigInt = bigint::DynBigInt{10};
+alias DynBigInt = bigint::DynBigInt{16};
 
 fn void main()
 {
@@ -23,7 +23,14 @@ fn void main()
 			x.tinit_with(inp.read(String));
 			DynBigInt y;
 			y.tinit_with(inp.read(String));
-			out.writeln((x * y).to_string(tmem));
+			DynBigInt quot;
+			quot.tinit();
+			DynBigInt rem;
+			rem.tinit();
+			x.divmod(&y, &quot, &rem);
+			out.write(quot.to_string(tmem));
+			out.sp();
+			out.writeln(rem.to_string(tmem));
 		};
 	}
 }
