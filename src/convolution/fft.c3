@@ -9,6 +9,8 @@ import c3algo::arith;
 
 alias Ftype = ComplexNumber{Real};
 
+const int MAX_LEVELS = 32;
+
 <*
  Transform in place.
 
@@ -23,42 +25,60 @@ fn void fft_inplace(Ftype[] in, bool inverse)
 	int n    = (int)in.len;
 	int half = n >> 1;
 
-	static int[] rev;
-	if (rev.len != n)
+	int mirror = 0;
+	for (int i = 1; i < n; i++)
 	{
-		if (rev.len != 0) mem::free(rev);
-		rev = mem::new_array(int, n);
-		for (int i = 0; i < n; i++)
+		int bit = half;
+		for (; (mirror & bit) != 0; bit >>= 1)
 		{
-			rev[i] = (rev[i >> 1] >> 1) | ((i & 1) == 0 ? 0 : half);
+			mirror ^= bit;
 		}
-	}
-	for (int i = 0; i < n; i++)
-	{
-		if (i < rev[i]) @swap(in[i], in[rev[i]]);
+		mirror ^= bit;
+		if (i < mirror) @swap(in[i], in[mirror]);
 	}
 
-	static Ftype[] w;
-	if (half != 0 && w.len != half)
+	static Ftype[][MAX_LEVELS] roots;
+	// better cache locality
+	static int built;
+	int levels = 0;
+	while ((1 << levels) < n) levels++;
+	if (built < levels)
 	{
-		if (w.len != 0) mem::free(w);
-		w = mem::new_array(Ftype, half);
-		for (int k = 0; k < half; k++)
+		int len     = 1 << levels;
+		int quarter = len / 4;
+		roots[levels] = mem::new_array(Ftype, len / 2);
+		if (quarter == 0) roots[levels][0] = { .r = 1, .c = 0 };
+		for (int k = 0; k < quarter; k++)
 		{
-			Real ang = 2 * (Real)math::PI * k / n;
-			w[k] = { .r = (Real)math::cos(ang), .c = (Real)math::sin(ang) };
+			Real ang = 2 * (Real)math::PI * k / len;
+			Ftype v  = { .r = (Real)math::cos(ang), .c = (Real)math::sin(ang) };
+			roots[levels][k] = v;
+			roots[levels][k + quarter] = { .r = -v.c, .c = v.r };
 		}
+		for (int level = levels - 1; level > built; level--)
+		{
+			Ftype[] longer = roots[level + 1];
+			int count      = 1 << (level - 1);
+			Ftype[] row    = mem::new_array(Ftype, count);
+			for (int k = 0; k < count; k++)
+			{
+				row[k] = longer[2 * k];
+			}
+			roots[level] = row;
+		}
+		built = levels;
 	}
 
+	int level = 1;
 	for (int len = 2; len <= n; len *= 2)
 	{
-		int step = n / len;
+		Ftype[] w = roots[level++];
 		for (int i = 0; i < n; i += len)
 		{
 			for (int j = 0; j < len / 2; j++)
 			{
 				Ftype u = in[i + j];
-				Ftype v = in[i + j + len / 2] * w[j * step];
+				Ftype v = in[i + j + len / 2] * w[j];
 				in[i + j] = u + v;
 				in[i + j + len / 2] = u - v;
 			}
