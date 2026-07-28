@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 # usage: scripts/gen_verify_files.py [<out>]  (default: verify_files.json)
 # env: C3FLAGS overrides compile flags (default -O3)
+# AI GENERATED; use at your own risk
 import json, os, re, sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from bundle import bundle, modules
+from minify import minify
+
 root = Path(__file__).resolve().parent.parent
 srcs = sorted(str(p.relative_to(root)) for p in root.glob("src/**/*.c3"))
+mod2path = modules(sorted(root.glob("src/**/*.c3")))
 flags = os.getenv("C3FLAGS", "-O3")
 mod_re = re.compile(r"^\s*module\s+([\w:]+)", re.M)
 imp_re = re.compile(r"^\s*import\s+([^;]+);", re.M)
@@ -31,12 +37,23 @@ def title_of(body, default):
     m = title_re.search(body)
     return m.group(1) if m else default
 
+def variants(rel, body):
+    joined = bundle(root / rel, mod2path)
+    out = []
+    for name, code in ("bundled", joined), ("minified", minify(body)), ("bundled + minified", minify(joined)):
+        dest = root / ".competitive-verifier" / name.replace(" + ", "_") / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(code)
+        out.append({"name": name, "path": str(dest.relative_to(root))})
+    return out
+
 files = {}
 for s in srcs:
     title = title_of(text[s], next(iter(mod_re.findall(text[s])), s))
     files[s] = {
         "dependencies": deps(text[s], s),
         "document_attributes": {"TITLE": title},
+        "additonal_sources": variants(s, text[s]),
     }
 
 for t in sorted(root.glob("test/**/*.yosupo.c3")):
@@ -58,6 +75,7 @@ for t in sorted(root.glob("test/**/*.yosupo.c3")):
             "command": f"./{bin}",
         }],
         "document_attributes": {"PROBLEM": url, "TITLE": title_of(body, name)},
+        "additonal_sources": variants(rel, body),
     }
 
 out = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("verify_files.json")

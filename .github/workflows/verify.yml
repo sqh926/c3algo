@@ -112,6 +112,9 @@ jobs:
           result-files: ${{ steps.all-artifacts.outputs.artifacts-root }}/Result-*/result.json
           output-path: ${{ github.workspace }}/merged-result.json
 
+      - name: Generate additional sources
+        run: python scripts/gen_verify_files.py ${{ runner.temp }}/verify_files.json
+
       - name: Docs
         uses: competitive-verifier/actions/docs@v2
         with:
