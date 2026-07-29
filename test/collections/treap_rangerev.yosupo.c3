@@ -1,7 +1,7 @@
 // @title Range Reverse Range Sum (Implicit Treap)
 // PROBLEM: https://judge.yosupo.jp/problem/range_reverse_range_sum
 
-import c3algo::collections::implicittreap;
+import c3algo::collections::treap;
 import c3algo::algebra::monoid;
 import c3algo::io;
 
@@ -15,7 +15,7 @@ fn Sum Identity.act(self, Sum m) @inline => m;
 fn Identity Identity.op(self, Identity other) @inline => self;
 fn Identity Identity.e(self) @inline => (Identity) { };
 
-alias Treap = implicittreap::ImplicitTreap{Sum, Identity};
+alias Treap = treap::Treap{Sum, Identity};
 
 const int OP_REVERSE = 0;
 

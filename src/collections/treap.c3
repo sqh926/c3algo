@@ -49,11 +49,11 @@
  INSTANTIATE
      import c3algo::algebra::monoid;
      import c3algo::algebra::action;
-     import c3algo::collections::implicittreap;
+     import c3algo::collections::treap;
 
      alias Elem = SumLen {long};
      alias Map  = Affine {long};
-     alias Seq  = ImplicitTreap {Elem, Map};
+     alias Seq  = Treap {Elem, Map};
 
  API
      Seq* init(Allocator allocator)                    an empty sequence
@@ -86,7 +86,7 @@
  @require concept::@is_monoid(Monoid) : "Implicit treap requires a monoid with `op(a,b)` and `e()`"
  @require concept::@is_action(Action, Monoid) : "Implicit treap requires an action with `act(m)`, `op(f)` and `e()`"
 *>
-module c3algo::collections::implicittreap <Monoid, Action>;
+module c3algo::collections::treap <Monoid, Action>;
 
 import c3algo::algebra::concept;
 import c3algo::random;
@@ -105,7 +105,7 @@ struct Node
 	Node*[2] child;
 }
 
-struct ImplicitTreap
+struct Treap
 {
 	Allocator allocator;
 	Node* root;
@@ -116,11 +116,11 @@ struct ImplicitTreap
 
  @param [&inout] allocator : "The allocator nodes are taken from"
 
- @require !self.is_initialized() : "The ImplicitTreap must not be initialized"
+ @require !self.is_initialized() : "The Treap must not be initialized"
 
  @ensure self.root == null
 *>
-fn ImplicitTreap* ImplicitTreap.init(&self, Allocator allocator)
+fn Treap* Treap.init(&self, Allocator allocator)
 {
 	self.allocator = allocator;
 	self.root = null;
@@ -130,18 +130,18 @@ fn ImplicitTreap* ImplicitTreap.init(&self, Allocator allocator)
 <*
  Initialize an empty Treap with the temp allocator.
 
- @require !self.is_initialized() : "The ImplicitTreap must not be initialized"
+ @require !self.is_initialized() : "The Treap must not be initialized"
 
  @ensure self.root == null
 *>
-fn ImplicitTreap* ImplicitTreap.tinit(&self) => self.init(tmem) @inline;
+fn Treap* Treap.tinit(&self) => self.init(tmem) @inline;
 
 <*
  Free every node and leave the Treap uninitialized.
 
  @ensure !self.is_initialized()
 *>
-fn void ImplicitTreap.free(&self)
+fn void Treap.free(&self)
 {
 	if (!self.is_initialized()) return;
 	self.clear();
@@ -151,11 +151,11 @@ fn void ImplicitTreap.free(&self)
 <*
  Free every node, keeping the Treap initialized.
 
- @require self.is_initialized() : "The ImplicitTreap must be initialized"
+ @require self.is_initialized() : "The Treap must be initialized"
 
  @ensure self.root == null
 *>
-fn void ImplicitTreap.clear(&self)
+fn void Treap.clear(&self)
 {
 	free_nodes(self.allocator, self.root);
 	self.root = null;
@@ -164,26 +164,26 @@ fn void ImplicitTreap.clear(&self)
 <*
  @return "`true` if the Treap has an allocator"
 *>
-fn bool ImplicitTreap.is_initialized(&self) @inline => self.allocator != null;
+fn bool Treap.is_initialized(&self) @inline => self.allocator != null;
 
 <*
  @return "The number of elements"
 *>
-fn sz ImplicitTreap.len(&self) @inline => safe_size(self.root);
+fn sz Treap.len(&self) @inline => safe_size(self.root);
 
 <*
  @return "`true` if the Treap holds no elements"
 *>
-fn bool ImplicitTreap.is_empty(&self) @inline => self.root == null;
+fn bool Treap.is_empty(&self) @inline => self.root == null;
 
 <*
  Append an element.
 
  @param v : "The element to append"
 
- @require self.allocator != null : "The ImplicitTreap must be initialized"
+ @require self.allocator != null : "The Treap must be initialized"
 *>
-fn void ImplicitTreap.push_back(&self, Monoid v)
+fn void Treap.push_back(&self, Monoid v)
 {
 	self.root = merge_nodes(self.root, new_node(self.allocator, v));
 }
@@ -194,10 +194,10 @@ fn void ImplicitTreap.push_back(&self, Monoid v)
  @param at : "The position the element takes"
  @param v : "The element to insert"
 
- @require self.allocator != null : "The ImplicitTreap must be initialized"
+ @require self.allocator != null : "The Treap must be initialized"
  @require at >= 0 && at <= self.len() : "Index out of range"
 *>
-fn void ImplicitTreap.insert(&self, sz at, Monoid v)
+fn void Treap.insert(&self, sz at, Monoid v)
 {
 	Node* l;
 	Node* r;
@@ -210,10 +210,10 @@ fn void ImplicitTreap.insert(&self, sz at, Monoid v)
 
  @param at : "The position to remove"
 
- @require self.allocator != null : "The ImplicitTreap must be initialized"
+ @require self.allocator != null : "The Treap must be initialized"
  @require at >= 0 && at < self.len() : "Index out of range"
 *>
-fn void ImplicitTreap.erase(&self, sz at)
+fn void Treap.erase(&self, sz at)
 {
 	Node* l;
 	Node* m;
@@ -231,7 +231,7 @@ fn void ImplicitTreap.erase(&self, sz at)
 
  @require k >= 0 && k < self.len() : "Index out of range"
 *>
-fn Monoid ImplicitTreap.get(&self, sz k)
+fn Monoid Treap.get(&self, sz k)
 {
 	Node* node = self.root;
 	while (node)
@@ -258,7 +258,7 @@ fn Monoid ImplicitTreap.get(&self, sz k)
 
  @require k >= 0 && k < self.len() : "Index out of range"
 *>
-fn void ImplicitTreap.set(&self, sz k, Monoid v)
+fn void Treap.set(&self, sz k, Monoid v)
 {
 	Node* a;
 	Node* b;
@@ -280,7 +280,7 @@ fn void ImplicitTreap.set(&self, sz k, Monoid v)
 
  @require l >= 0 && l <= r && r <= self.len() : "Range out of bounds"
 *>
-fn Monoid ImplicitTreap.range(&self, sz l, sz r)
+fn Monoid Treap.range(&self, sz l, sz r)
 {
 	Node* a;
 	Node* b;
@@ -301,7 +301,7 @@ fn Monoid ImplicitTreap.range(&self, sz l, sz r)
 
  @require l >= 0 && l <= r && r <= self.len() : "Range out of bounds"
 *>
-fn void ImplicitTreap.update(&self, sz l, sz r, Action f)
+fn void Treap.update(&self, sz l, sz r, Action f)
 {
 	Node* a;
 	Node* b;
@@ -320,7 +320,7 @@ fn void ImplicitTreap.update(&self, sz l, sz r, Action f)
 
  @require l >= 0 && l <= r && r <= self.len() : "Range out of bounds"
 *>
-fn void ImplicitTreap.reverse(&self, sz l, sz r)
+fn void Treap.reverse(&self, sz l, sz r)
 {
 	Node* a;
 	Node* b;
@@ -338,12 +338,12 @@ fn void ImplicitTreap.reverse(&self, sz l, sz r)
 
  @return "A Treap holding the elements [at, len), sharing this allocator"
 
- @require self.allocator != null : "The ImplicitTreap must be initialized"
+ @require self.allocator != null : "The Treap must be initialized"
  @require at >= 0 && at <= self.len() : "Index out of range"
 *>
-fn ImplicitTreap ImplicitTreap.split(&self, sz at)
+fn Treap Treap.split(&self, sz at)
 {
-	ImplicitTreap right;
+	Treap right;
 	right.allocator = self.allocator;
 	split_nodes(self.root, at, &self.root, &right.root);
 	return right;
@@ -357,7 +357,7 @@ fn ImplicitTreap ImplicitTreap.split(&self, sz at)
  @require self.allocator == other.allocator : "Both Treaps must share an allocator"
  @require self != other : "A Treap may not be merged into itself"
 *>
-fn void ImplicitTreap.merge(&self, ImplicitTreap* other)
+fn void Treap.merge(&self, Treap* other)
 {
 	self.root = merge_nodes(self.root, other.root);
 	other.root = null;

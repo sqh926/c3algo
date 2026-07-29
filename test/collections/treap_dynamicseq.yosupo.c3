@@ -1,7 +1,7 @@
 // @title Dynamic Sequence Range Affine Range Sum (Implicit Treap)
 // PROBLEM: https://judge.yosupo.jp/problem/dynamic_sequence_range_affine_range_sum
 
-import c3algo::collections::implicittreap;
+import c3algo::collections::treap;
 import c3algo::algebra::action;
 import c3algo::algebra::monoid;
 import c3algo::numbertheory::modint;
@@ -10,7 +10,7 @@ import c3algo::io;
 alias Mint = ModInt{998244353};
 alias Elem = SumLen{Mint};
 alias Map = Affine{Mint};
-alias Treap = implicittreap::ImplicitTreap{Elem, Map};
+alias Treap = treap::Treap{Elem, Map};
 
 const int OP_INSERT  = 0;
 const int OP_ERASE   = 1;
