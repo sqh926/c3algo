@@ -40,7 +40,7 @@ def title_of(body, default):
 def variants(rel, body):
     joined = bundle(root / rel, mod2path)
     out = []
-    for name, code in ("bundled", joined), ("minified", minify(body)), ("bundled + minified", minify(joined)):
+    for name, code in ("bundled", joined), ("bundled + minified", minify(joined)):
         dest = root / ".competitive-verifier" / name.replace(" + ", "_") / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_text(code)
