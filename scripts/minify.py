@@ -6,7 +6,7 @@ from pathlib import Path
 
 word_re = re.compile(r"[@$#]{0,2}[A-Za-z_]\w*")
 num_re = re.compile(r"0[xXbBoO][0-9a-fA-F_]+|\d[\d_]*(?:\.\d[\d_]*)?(?:[eE][+-]?\d+)?[a-zA-Z_]*")
-puncts = ("<<=", ">>=", "...", "??=", "++", "--", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=",
+puncts = ("<<=", ">>=", "...", "??=", "&&&", "|||", "++", "--", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=",
           "==", "!=", "<=", ">=", "&&", "||", "<<", ">>", "::", "..", "=>", "->", "??", "!!")
 glued = {p[:2] for p in puncts} | {"//", "/*", "<*", "*>", "*/"}
 opaque = ("@operator", "@init", "@finalizer", "@dynamic", "@export", "@extern", "@builtin")
@@ -88,11 +88,11 @@ def shake(cs):
             keep[i] = True
 
 def render(toks, width=200):
-    out, line = [], 0
+    out, line, depth = [], 0, 0
     for t in toks:
         if out:
             last = out[-1][-1]
-            if line >= width:
+            if line >= width and not depth and last in ";}":
                 out.append("\n")
                 line = 0
             elif (last.isalnum() or last in "_@$#") and (t[0].isalnum() or t[0] in "_@$#") or last + t[0] in glued:
@@ -100,6 +100,7 @@ def render(toks, width=200):
                 line += 1
         out.append(t)
         line += len(t)
+        depth += (t in "([{") - (t in ")]}")
     return "".join(out) + "\n"
 
 def minify(text):
