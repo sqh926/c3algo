@@ -82,14 +82,14 @@ fn void fft_pass(Ftype[] in, Ftype[] w, int from, int to, int len, int shift) @l
 			Pair b  = pair_load(&in[j + quarter]);
 			Pair cc = pair_mul(pair_load(&in[j + 2 * quarter]), c);
 			Pair cd = pair_mul(pair_load(&in[j + 3 * quarter]), c);
-			Pair x = a + cc;
-			Pair z = a - cc;
-			Pair y = pair_mul(b + cd, d);
-			Pair w = pair_mul_i(pair_mul(b - cd, d));
+			Pair x  = a + cc;
+			Pair y  = pair_mul(b + cd, d);
+			Pair z  = a - cc;
+			Pair t  = pair_mul_i(pair_mul(b - cd, d));
 			pair_store(&in[j], x + y);
 			pair_store(&in[j + quarter], x - y);
-			pair_store(&in[j + 2 * quarter], z + w);
-			pair_store(&in[j + 3 * quarter], z - w);
+			pair_store(&in[j + 2 * quarter], z + t);
+			pair_store(&in[j + 3 * quarter], z - t);
 		}
 	}
 }
@@ -106,14 +106,14 @@ fn void fft_manual(Ftype[] in, Ftype[] w, int from, int to, int len) @local
 			Ftype b  = in[i + 1];
 			Ftype cc = in[i + 2] * c;
 			Ftype cd = in[i + 3] * c;
-			Ftype x = a + cc;
-			Ftype z = a - cc;
-			Ftype y = (b + cd) * d;
-			Ftype w = mul_i((b - cd) * d);
-			in[i]     = x + y;
+			Ftype x  = a + cc;
+			Ftype y  = (b + cd) * d;
+			Ftype z  = a - cc;
+			Ftype t  = mul_i((b - cd) * d);
+			in[i] = x + y;
 			in[i + 1] = x - y;
-			in[i + 2] = z + w;
-			in[i + 3] = z - w;
+			in[i + 2] = z + t;
+			in[i + 3] = z - t;
 		}
 		return;
 	}
@@ -123,7 +123,7 @@ fn void fft_manual(Ftype[] in, Ftype[] w, int from, int to, int len) @local
 		{
 			Ftype u = in[i];
 			Ftype v = in[i + 1] * w[i >> 1];
-			in[i]     = u + v;
+			in[i] = u + v;
 			in[i + 1] = u - v;
 		}
 	}
@@ -168,18 +168,18 @@ fn void ifft_pass(Ftype[] in, Ftype[] w, int from, int to, int len, int shift) @
 		Ftype d  = w[2 * node].conjugate();
 		for (int j = i; j < i + quarter; j += 2)
 		{
-			Pair u0 = pair_load(&in[j]);
-			Pair u1 = pair_load(&in[j + quarter]);
-			Pair u2 = pair_load(&in[j + 2 * quarter]);
-			Pair u3 = pair_load(&in[j + 3 * quarter]);
-			Pair x = u0 + u1;
-			Pair y = pair_mul(u0 - u1, d);
-			Pair z = u2 + u3;
-			Pair w = -pair_mul_i(pair_mul(u2 - u3, d));
+			Pair u0 =  pair_load(&in[j]);
+			Pair u1 =  pair_load(&in[j + quarter]);
+			Pair u2 =  pair_load(&in[j + 2 * quarter]);
+			Pair u3 =  pair_load(&in[j + 3 * quarter]);
+			Pair x  =  u0 + u1;
+			Pair y  =  pair_mul(u0 - u1, d);
+			Pair z  =  u2 + u3;
+			Pair t  = -pair_mul_i(pair_mul(u2 - u3, d));
 			pair_store(&in[j], x + z);
-			pair_store(&in[j + quarter], y + w);
+			pair_store(&in[j + quarter], y + t);
 			pair_store(&in[j + 2 * quarter], pair_mul(x - z, c));
-			pair_store(&in[j + 3 * quarter], pair_mul(y - w, c));
+			pair_store(&in[j + 3 * quarter], pair_mul(y - t, c));
 		}
 	}
 }
@@ -190,20 +190,20 @@ fn void ifft_manual(Ftype[] in, Ftype[] w, int from, int to, int len) @local
 	{
 		for (int i = from; i < to; i += 4)
 		{
-			Ftype c  = w[i >> 2].conjugate();
-			Ftype d  = w[i >> 1].conjugate();
-			Ftype u0 = in[i];
-			Ftype u1 = in[i + 1];
-			Ftype u2 = in[i + 2];
-			Ftype u3 = in[i + 3];
-			Ftype x = u0 + u1;
-			Ftype y = (u0 - u1) * d;
-			Ftype z = u2 + u3;
-			Ftype w = -mul_i((u2 - u3) * d);
-			in[i]     = x + z;
-			in[i + 1] = y + w;
+			Ftype c  =  w[i >> 2].conjugate();
+			Ftype d  =  w[i >> 1].conjugate();
+			Ftype u0 =  in[i];
+			Ftype u1 =  in[i + 1];
+			Ftype u2 =  in[i + 2];
+			Ftype u3 =  in[i + 3];
+			Ftype x  =  u0 + u1;
+			Ftype y  =  (u0 - u1) * d;
+			Ftype z  =  u2 + u3;
+			Ftype t  = -mul_i((u2 - u3) * d);
+			in[i] = x + z;
+			in[i + 1] = y + t;
 			in[i + 2] = (x - z) * c;
-			in[i + 3] = (y - w) * c;
+			in[i + 3] = (y - t) * c;
 		}
 		return;
 	}
@@ -213,7 +213,7 @@ fn void ifft_manual(Ftype[] in, Ftype[] w, int from, int to, int len) @local
 		{
 			Ftype u = in[i];
 			Ftype v = in[i + 1];
-			in[i]     = u + v;
+			in[i] = u + v;
 			in[i + 1] = (u - v) * w[i >> 1].conjugate();
 		}
 	}
@@ -236,11 +236,19 @@ fn void ifft_inplace(Ftype[] in)
 	int len   = n;
 	int shift = 0;
 	while ((1 << shift) < n) shift++;
-	while (len > CHUNK) { len >>= 2; shift -= 2; }
+	while (len > CHUNK)
+	{
+		len >>= 2;
+		shift -= 2;
+	}
 
-	int deep  = len;
+	int deep   = len;
 	int dshift = shift;
-	while (deep >= 8) { deep >>= 2; dshift -= 2; }
+	while (deep >= 8)
+	{
+		deep >>= 2;
+		dshift -= 2;
+	}
 
 	for (int i = 0; i < n; i += len)
 	{
@@ -259,7 +267,7 @@ fn void ifft_inplace(Ftype[] in)
 
 fn void unpack(Ftype[] h, int p, int q) @local @inline
 {
-	Ftype t = { .r = 0, .c = -0.25 };
+	Ftype t  = { .r = 0, .c = -0.25 };
 	Ftype hp = h[p];
 	Ftype hq = h[q];
 	Ftype cp = hp.conjugate();

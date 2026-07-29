@@ -3,7 +3,6 @@ module c3algo::bigint <RADIX>;
 
 import std::collections::list;
 import std::math;
-import std::core::mem::alloc;
 import c3algo::convolution::fft;
 
 const ulong BASE = RADIX == 10 ? 10_000_000_000_000_000UL : 1UL << 60;
