@@ -161,6 +161,47 @@ fn ulong mulmod_u64(ulong a, ulong b, ulong m) @local @inline
 }
 
 <*
+ Turns a division into two multiplications.
+*>
+struct Barrett
+{
+	ulong mod;
+	ulong inv;
+}
+
+<*
+ @param mod : "The modulus"
+
+ @require mod > 1 : "The modulus must be greater than one"
+ @require mod <= (ulong)1 << 32 : "The modulus has to fit in 32 bits"
+*>
+fn Barrett barrett(ulong mod) => { .mod = mod, .inv = ~(ulong)0 / mod + 1 };
+
+<*
+ `x` modulo the stored modulus, below it, for any `x`.
+*>
+fn ulong Barrett.reduce(&self, ulong x) @inline
+{
+	ulong quotient = (ulong)(((uint128)x * self.inv) >> 64);
+	long rest      = (long)(x - quotient * self.mod);
+	return (ulong)(rest < 0 ? rest + (long)self.mod : rest);
+}
+
+<*
+ `x` modulo the stored modulus, never negative, for `x` above `long.min`.
+*>
+fn long Barrett.reduce_signed(&self, long x) @inline
+{
+	long rest = (long)self.reduce((ulong)(x < 0 ? -x : x));
+	return x < 0 && rest != 0 ? (long)self.mod - rest : rest;
+}
+
+<*
+ `a * b` modulo the stored modulus, for `a` and `b` reduced already.
+*>
+fn ulong Barrett.mul(&self, ulong a, ulong b) @inline => self.reduce(a * b);
+
+<*
  Raise to a power modulo `m` by repeated squaring.
 
  @param a : "The base"

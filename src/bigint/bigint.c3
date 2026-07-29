@@ -9,7 +9,7 @@ import c3algo::convolution::fft;
 const ulong BASE = RADIX == 10 ? 10_000_000_000_000_000UL : 1UL << 60;
 
 <*
- The base fed to the FFT, small enough that the convolution stays exact in doubles
+ The base used for the FFT product, small enough that the convolution stays exact in doubles
 *>
 const ulong FFT_BASE = RADIX == 10 ? 10_000UL : 1UL << 15;
 const sz CHUNKS          = 4;
@@ -17,7 +17,7 @@ const int DIGIT_LENGTH   = RADIX == 10 ? 16 : 15;
 const String DIGIT_CHARS = "0123456789abcdef";
 
 <*
- The base of the schoolbook product, small enough that a piece product fits in a ulong
+ The base of the naive product, small enough that a piece product fits in a ulong
 *>
 const ulong PIECE_BASE = RADIX == 10 ? 100_000_000UL : 1UL << 20;
 const sz PIECES = RADIX == 10 ? 2 : 3;
