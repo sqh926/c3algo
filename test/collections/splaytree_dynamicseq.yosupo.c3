@@ -2,7 +2,8 @@
 // PROBLEM: https://judge.yosupo.jp/problem/dynamic_sequence_range_affine_range_sum
 
 import c3algo::collections::splaytree;
-import c3algo::algebra::affine;
+import c3algo::algebra::action;
+import c3algo::algebra::monoid;
 import c3algo::numbertheory::modint;
 import c3algo::io;
 

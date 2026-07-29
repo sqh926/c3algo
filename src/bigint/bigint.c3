@@ -1,4 +1,41 @@
 // @title Big Integer
+<*
+ An arbitrary precision integer.
+
+ INSTANTIATE
+     import c3algo::bigint;
+
+     alias BigInt = bigint::DynBigInt {10};
+
+ API
+     DynBigInt* init(Allocator allocator)                zero
+     DynBigInt* init_with(Allocator allocator, String s) parsed from text, sign allowed
+     DynBigInt* tinit() / tinit_with(String s)           the same on the temp allocator
+     void free()
+     bool is_initialized()
+     bool is_zero()
+     DynBigInt copy()
+     + - * / % and unary -
+     DynBigInt sqrt()                                    integer square root
+     void sqrt_into(DynBigInt* root)
+     void divmod(DynBigInt* b, DynBigInt* quot, DynBigInt* rem)
+     void divmod_small(ulong d, DynBigInt* quot, ulong* rem)
+     String to_string(Allocator allocator)
+     void add_into / sub_into / mul_into(DynBigInt* r, DynBigInt* a, DynBigInt* b)
+
+     The operators allocate a result every time. In a loop prefer the into forms.
+
+ USE
+     BigInt a;
+     BigInt b;
+     a.init_with(mem, "123456789012345678901234567890");
+     b.init_with(mem, "-98765432109876543210");
+     defer a.free();
+     defer b.free();
+
+     BigInt c = a * b;
+     out.writeln(c.to_string(mem));
+*>
 module c3algo::bigint <RADIX>;
 
 import std::collections::list;
@@ -538,7 +575,6 @@ fn ulong digit_val(char c) @local @inline
 	if (c >= 'a') return (ulong)(c - 'a' + 10);
 	return (ulong)(c - 'A' + 10);
 }
-
 
 fn String DynBigInt.to_string(&self, Allocator allocator)
 {

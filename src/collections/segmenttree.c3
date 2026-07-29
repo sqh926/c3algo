@@ -6,6 +6,51 @@
 
  https://cp-algorithms.com/data_structures/segment_tree.html
 
+ MONOID
+     The element is any struct of yours with two methods:
+
+         fn T T.op(self, T other)   combines two elements, has to be associative;
+                                    the order is kept, so it may be non-commutative
+         fn T T.e(self)             the neutral element, x.op(x.e()) == x
+
+     Some of the most popular monoids are already implemented in c3algo::algebra::monoid <Elem>:
+	 Sum, Min, Max, Prod, Xor, Gcd, SumLen.
+
+     Classical example, the minimum together with how many times it occurs:
+
+         struct MinCount { long v; long n; }
+         fn MinCount MinCount.op(self, MinCount o) @inline
+         {
+             if (self.v != o.v) return self.v < o.v ? self : o;
+             return (MinCount) { self.v, self.n + o.n };
+         }
+         fn MinCount MinCount.e(self) @inline => (MinCount) { long::max, 0 };
+
+ INSTANTIATE
+     import c3algo::algebra::monoid;
+     import c3algo::collections::segmenttree;
+
+     alias Seg = SegmentTree {Max {long}};
+
+ API
+     Seg* init(Allocator allocator, sz n)              every element is e()
+     Seg* init_with(Allocator allocator, Monoid[] src) same, filled from src, O(n)
+     Seg* tinit(sz n)                                  init on the temp allocator
+     void free()
+     bool is_initialized()
+     sz   len()
+     Monoid get(sz i)
+     void set(sz i, Monoid v)
+     Monoid range(sz l, sz r)                          fold of [l, r)
+
+ USE
+     Seg s;
+     s.init(mem, 8);
+     defer s.free();
+
+     s.set(2, {42});
+     long best = s.range(0, 5).v;
+
  @require concept::@is_monoid(Monoid) : "Segment tree requires a monoid with `op(a,b)` and `e()`"
 *>
 module c3algo::collections::segmenttree <Monoid>;

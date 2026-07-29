@@ -1,6 +1,7 @@
 // @title Integer Factorization (Pollard's rho)
 <*
- Complete factorization by Pollard's rho, with Brent's batching.
+ Complete factorization by Pollard's rho, with batching. The returned list
+ belongs to the caller.
 
  https://cp-algorithms.com/algebra/factorization.html
 *>

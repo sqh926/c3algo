@@ -4,7 +4,6 @@
 import c3algo::io;
 import c3algo::numbertheory::factorize;
 
-
 fn void main()
 {
 	FastInput inp;

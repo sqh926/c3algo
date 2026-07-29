@@ -6,6 +6,77 @@
 
  https://cp-algorithms.com/data_structures/segment_tree.html#range-updates-lazy-propagation
 
+ MONOID
+     The element is any struct of yours with two methods:
+
+         fn T T.op(self, T other)   combines two elements, has to be associative;
+                                    the order is kept, so it may be non-commutative
+         fn T T.e(self)             the neutral element, x.op(x.e()) == x
+
+     Some of the most popular monoids are already implemented in c3algo::algebra::monoid <Elem>:
+	 Sum, Min, Max, Prod, Xor, Gcd, SumLen.
+
+
+	 Classical example, the minimum together with how many times it occurs:
+
+         struct MinCount { long v; long n; }
+         fn MinCount MinCount.op(self, MinCount o) @inline
+         {
+             if (self.v != o.v) return self.v < o.v ? self : o;
+             return (MinCount) { self.v, self.n + o.n };
+         }
+         fn MinCount MinCount.e(self) @inline => (MinCount) { long::max, 0 };
+
+ ACTION
+     An action is a monoid as well, plus a way to apply itself to an element:
+
+         fn A A.op(self, A other)   compose, self applied first and other after it
+         fn A A.e(self)             the action that changes nothing
+         fn M A.act(self, M m)      apply to an element
+
+     Classical example, adding a constant to a range folded by Min:
+
+         alias MinLong = Min {long};
+
+         struct Add { long v; }
+         fn Add Add.op(self, Add o) @inline => (Add) { self.v + o.v };
+         fn Add Add.e(self) @inline => (Add) { 0 };
+         fn MinLong Add.act(self, MinLong m) @inline => (MinLong) { m.v + self.v };
+
+     act() is handed the fold of a whole range, not the elements one by one. A
+     minimum survives that, since it shifts by the same constant. A sum would not,
+     for example.
+
+ INSTANTIATE
+     import c3algo::algebra::monoid;
+     import c3algo::algebra::action;
+     import c3algo::collections::lazysegmenttree;
+
+     alias Elem = SumLen {long};
+     alias Map  = Affine {long};
+     alias Lazy = LazySegmentTree {Elem, Map};
+
+ API
+     Lazy* init(Allocator allocator, sz n)              every element is e()
+     Lazy* init_with(Allocator allocator, Monoid[] src) same, filled from src
+     Lazy* tinit(sz n)                                  init on the temp allocator
+     void free()
+     bool is_initialized()
+     sz   len()
+     Monoid get(sz i)
+     void set(sz i, Monoid v)
+     void update(sz l, sz r, Action f)                  apply f to every element of [l, r)
+     Monoid range(sz l, sz r)                           fold of [l, r)
+
+ USE
+     Lazy t;
+     t.init(mem, 8);
+     defer t.free();
+
+     for (sz i = 0; i < 8; i++) t.set(i, { 1, 1 });
+     t.update(2, 5, { 3, 1 });
+     long sum = t.range(0, 8).sum;
+
  @require concept::@is_monoid(Monoid) : "Lazy segment tree requires a monoid with `op(a,b)` and `e()`"
  @require concept::@is_action(Action, Monoid) : "Lazy segment tree requires an action with `act(m)`, `op(f)` and `e()`"
 *>

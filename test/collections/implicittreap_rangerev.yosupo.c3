@@ -2,10 +2,10 @@
 // PROBLEM: https://judge.yosupo.jp/problem/range_reverse_range_sum
 
 import c3algo::collections::implicittreap;
-import c3algo::algebra;
+import c3algo::algebra::monoid;
 import c3algo::io;
 
-alias Sum = algebra::Sum{long};
+alias Sum = monoid::Sum{long};
 
 struct Identity
 {

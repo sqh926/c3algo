@@ -5,6 +5,46 @@
  `FastInput` reads the whole stream in `init` and parses out of that one buffer, so reading a
  value costs nothing. `FastOutput` fills a buffer and hands it to the file descriptor in large
  blocks, flushing whatever is left over in `free`.
+
+ INSTANTIATE
+     import c3algo::io;
+
+ API
+     FastInput* init(Allocator allocator, CInt fd = 0)
+     FastInput* tinit(CInt fd = 0)                    init on the temp allocator
+     void free()
+     bool is_initialized()
+     bool eof()
+     void skip_space()
+     T    read($Type)                                 one number of that type
+     void read_into(ptr)                              read straight into a variable
+
+     FastOutput* init(Allocator allocator, CInt fd = 1, sz capacity = 1 << 19)
+     FastOutput* tinit(CInt fd = 1, sz capacity = 1 << 19)
+     void free()                                      flushes on the way out
+     bool is_initialized()
+     void flush()
+     void write(x)                                    a number or a string
+     void writeln(x)                                  the same plus a newline
+     void write_bytes(String s)
+     void sp() / nl()                                 a space / a newline
+
+ USE
+     FastInput inp;
+     inp.init(mem);
+     defer inp.free();
+
+     FastOutput out;
+     out.init(mem);
+     defer out.free();
+
+     int n = inp.read(int);
+     for (int i = 0; i < n; i++)
+     {
+         long x = inp.read(long);
+         out.write(x * 2);
+         out.nl();
+     }
 *>
 module c3algo::io;
 import libc;
@@ -461,7 +501,6 @@ macro void FastOutput.nl(&self)
 char[4][10000] full_lut @local;
 char[4][10000] head_lut @local;
 char[10000] head_len @local;
-
 
 fn void build_lut() @init @local
 {

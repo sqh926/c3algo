@@ -2,11 +2,12 @@
 // PROBLEM: https://judge.yosupo.jp/problem/dynamic_tree_vertex_add_path_sum
 
 import c3algo::collections::linkcuttree;
-import c3algo::algebra;
+import c3algo::algebra::monoid;
+import c3algo::algebra::action;
 import c3algo::io;
 
-alias Sum = algebra::Sum{long};
-alias Identity = algebra::Empty{long};
+alias Sum = monoid::Sum{long};
+alias Identity = action::Identity{long};
 alias Tree = linkcuttree::LinkCutTree{Sum, Identity};
 
 const int OP_RELINK = 0;

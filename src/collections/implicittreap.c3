@@ -5,6 +5,84 @@
 
  https://cp-algorithms.com/data_structures/treap.html
 
+ MONOID
+     The element is any struct of yours with two methods:
+
+         fn T T.op(self, T other)   combines two elements, has to be associative;
+                                    the order is kept, so it may be non-commutative
+         fn T T.e(self)             the neutral element, x.op(x.e()) == x
+
+     Some of the most popular monoids are already implemented in c3algo::algebra::monoid <Elem>:
+	 Sum, Min, Max, Prod, Xor, Gcd, SumLen.
+
+
+     Classical example, the minimum together with how many times it occurs:
+
+         struct MinCount { long v; long n; }
+         fn MinCount MinCount.op(self, MinCount o) @inline
+         {
+             if (self.v != o.v) return self.v < o.v ? self : o;
+             return (MinCount) { self.v, self.n + o.n };
+         }
+         fn MinCount MinCount.e(self) @inline => (MinCount) { long::max, 0 };
+
+ ACTION
+     An action is a monoid as well, plus a way to apply itself to an element:
+
+         fn A A.op(self, A other)   compose, self applied first and other after it
+         fn A A.e(self)             the action that changes nothing
+         fn M A.act(self, M m)      apply to an element
+
+     Classical example, adding a constant to a range folded by Min:
+
+         alias MinLong = Min {long};
+
+         struct Add { long v; }
+         fn Add Add.op(self, Add o) @inline => (Add) { self.v + o.v };
+         fn Add Add.e(self) @inline => (Add) { 0 };
+         fn MinLong Add.act(self, MinLong m) @inline => (MinLong) { m.v + self.v };
+
+     act() is handed the fold of a whole range, not the elements one by one. A
+     minimum survives that, since it shifts by the same constant. A sum would not,
+     for example.
+
+ INSTANTIATE
+     import c3algo::algebra::monoid;
+     import c3algo::algebra::action;
+     import c3algo::collections::implicittreap;
+
+     alias Elem = SumLen {long};
+     alias Map  = Affine {long};
+     alias Seq  = ImplicitTreap {Elem, Map};
+
+ API
+     Seq* init(Allocator allocator)                    an empty sequence
+     Seq* tinit()                                      init on the temp allocator
+     void free()
+     void clear()
+     bool is_initialized()
+     sz   len()
+     bool is_empty()
+     void push_back(Monoid v)
+     void insert(sz at, Monoid v)
+     void erase(sz at)
+     Monoid get(sz k)
+     void set(sz k, Monoid v)
+     Monoid range(sz l, sz r)                          fold of [l, r)
+     void update(sz l, sz r, Action f)
+     void reverse(sz l, sz r)
+     Seq split(sz at)                                  [at, len) leaves as a new treap
+     void merge(Seq* other)                            appends other and empties it
+
+ USE
+     Seq s;
+     s.init(mem);
+     defer s.free();
+
+     for (sz i = 0; i < 5; i++) s.push_back({ (long)i, 1 });
+     s.reverse(1, 4);
+     long sum = s.range(0, 3).sum;
+
  @require concept::@is_monoid(Monoid) : "Implicit treap requires a monoid with `op(a,b)` and `e()`"
  @require concept::@is_action(Action, Monoid) : "Implicit treap requires an action with `act(m)`, `op(f)` and `e()`"
 *>

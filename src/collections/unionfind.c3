@@ -1,4 +1,32 @@
 // @title Union-Find
+<*
+ Disjoint sets over 0 .. n - 1, with union by rank and path halving.
+
+ https://cp-algorithms.com/data_structures/disjoint_set_union.html
+
+ INSTANTIATE
+     import c3algo::collections::unionfind;
+
+ API
+     UnionFind* init(Allocator allocator, sz n)        n singleton sets
+     UnionFind* tinit(sz n)                            init on the temp allocator
+     void free()
+     bool is_initialized()
+     sz   len()                                        how many elements
+     sz   count()                                      how many sets are left
+     sz   find(sz x)                                   the representative of x
+     bool unite(sz a, sz b)                            false if already together
+     bool same(sz a, sz b)
+
+ USE
+     UnionFind uf;
+     uf.init(mem, 5);
+     defer uf.free();
+
+     uf.unite(0, 1);
+     uf.unite(1, 2);
+     bool together = uf.same(0, 2);
+*>
 module c3algo::collections::unionfind;
 
 struct UnionFind

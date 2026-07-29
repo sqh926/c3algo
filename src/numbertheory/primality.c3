@@ -1,6 +1,6 @@
 // @title Primality Test (Miller-Rabin)
 <*
- A Miller-Rabin test (deterministic for 64-bit integers).
+ A Miller-Rabin test, deterministic for every 64-bit integer.
 
  https://cp-algorithms.com/algebra/primality_tests.html
 *>

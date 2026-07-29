@@ -2,6 +2,34 @@
 <*
  Integers modulo a compile time constant.
 
+ INSTANTIATE
+     import c3algo::numbertheory::modint;
+
+     alias Mint = ModInt {998244353};
+     alias from = modint::from {998244353};
+
+ API
+     ModInt from(long x)                 reduce x, negative values allowed
+     ModInt* init(long x)
+     ulong val()                         the representative in [0, MOD)
+     ModInt zero() / one()
+     Typeof(MOD) mod()
+     + - * / and += -= *= /= and ==      / is a multiplication by inv()
+     ModInt neg()                        also -x
+     ModInt pow(long p)
+     ModInt inv()                        needs MOD prime
+     void add_unsafe(ulong x)            add without reducing, see below
+     void pseudonormalize() / normalize()
+
+     add_unsafe leaves the value unreduced so that a long chain of additions costs
+     no divisions at all. call normalize() before reading it.
+
+ USE
+     Mint a = from(5);
+     Mint b = from(-3);
+     Mint c = a * b + a.pow(10);
+     ulong r = c.val();
+
  @require MOD > 0 : "Modulo must be greater than 0"
  @require types::is_int($Typeof(MOD)) : "Modulo must be an integer type"
  @require (ulong)MOD <= ulong::max / 8 / (ulong)MOD : "Modulo is too large, 8 * MOD ^ 2 must fit in 64 bits"
@@ -71,7 +99,6 @@ fn ulong ModInt.val(&self) @inline @nodiscard
 {
 	return self.x;
 }
-
 
 fn ModInt ModInt.zero(self) @inline => from(0);
 fn ModInt ModInt.one(self) @inline => from(1);

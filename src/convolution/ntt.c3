@@ -2,6 +2,27 @@
 <*
  The number theoretic transform
 
+ INSTANTIATE
+     import c3algo::convolution::ntt;
+
+     alias convolution = ntt::convolution {998244353};
+
+ API
+     void ntt_inplace(Mint[] in, bool inverse)       length a power of two
+     void convolution(int[] dst, int[] a, int[] b, Allocator scratch = mem)
+
+     MOD has to be an NTT friendly prime, that is p = c * 2^k + 1 with 2^k at least
+     the transform length: 998244353, 167772161, 469762049. For any other modulus
+     use c3algo::convolution::fft.
+
+ USE
+     int[] a = { 1, 2, 3 };
+     int[] b = { 4, 5 };
+     int[] c = mem::new_array(int, a.len + b.len - 1);
+     defer mem::free(c);
+
+     convolution(c, a, b);
+
  @require MOD > 2 : "The modulus must be an odd prime"
 *>
 module c3algo::convolution::ntt <MOD>;

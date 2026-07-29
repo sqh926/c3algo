@@ -1,5 +1,35 @@
 // @title Bitset
 <*
+ INSTANTIATE
+     import c3algo::collections::bitset;
+
+     alias Mask = BitSet {1000};
+
+ API
+     void set(sz i)                                    set / unset / flip one bit
+     void unset(sz i)
+     void flip(sz i)
+     bool get(sz i)                                    also mask[i]
+     void set_bool(sz i, bool value)                   also mask[i] = value
+     void set_all() / unset_all() / flip_all()
+     sz   cardinality()                                how many bits are set
+     bool any_set() / none_set()
+     sz   min_bit_set()                                index of the lowest set bit
+     sz   len()                                        SIZE, also (bool)mask.len
+     ^ | & and ^= |= &=                                between two bitsets
+     << >> and <<= >>=                                 shift by a number of bits
+     BitSet xor_hint(BitSet* set, sz hint)             xor knowing nothing is set below hint
+
+ USE
+     Mask a;
+     Mask b;
+     a.set(3);
+     b.set(3);
+     b.set(7);
+
+     Mask c = a ^ b;
+     sz bits = c.cardinality();
+
  @require SIZE > 0 : "The size of the bitset in bits must be at least 1"
  @require SIZE / (uint::size * 8) < uint::max
 *>

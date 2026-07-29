@@ -2,6 +2,84 @@
 <*
  https://en.wikipedia.org/wiki/Link/cut_tree
 
+ MONOID
+     The element is any struct of yours with two methods:
+
+         fn T T.op(self, T other)   combines two elements, has to be associative;
+                                    the order is kept, so it may be non-commutative
+         fn T T.e(self)             the neutral element, x.op(x.e()) == x
+
+     Some of the most popular monoids are already implemented in c3algo::algebra::monoid <Elem>:
+	 Sum, Min, Max, Prod, Xor, Gcd, SumLen.
+
+
+	 Classical example, the minimum together with how many times it occurs:
+
+         struct MinCount { long v; long n; }
+         fn MinCount MinCount.op(self, MinCount o) @inline
+         {
+             if (self.v != o.v) return self.v < o.v ? self : o;
+             return (MinCount) { self.v, self.n + o.n };
+         }
+         fn MinCount MinCount.e(self) @inline => (MinCount) { long::max, 0 };
+
+ ACTION
+     An action is a monoid as well, plus a way to apply itself to an element:
+
+         fn A A.op(self, A other)   compose, self applied first and other after it
+         fn A A.e(self)             the action that changes nothing
+         fn M A.act(self, M m)      apply to an element
+
+     Classical example, adding a constant to a range folded by Min:
+
+         alias MinLong = Min {long};
+
+         struct Add { long v; }
+         fn Add Add.op(self, Add o) @inline => (Add) { self.v + o.v };
+         fn Add Add.e(self) @inline => (Add) { 0 };
+         fn MinLong Add.act(self, MinLong m) @inline => (MinLong) { m.v + self.v };
+
+     act() is handed the fold of a whole range, not the elements one by one. A
+     minimum survives that, since it shifts by the same constant. A sum would not,
+     for example.
+
+ INSTANTIATE
+     import c3algo::algebra::monoid;
+     import c3algo::algebra::action;
+     import c3algo::collections::linkcuttree;
+
+     alias Elem = SumLen {long};
+     alias Map  = Affine {long};
+     alias Lct  = LinkCutTree {Elem, Map};
+
+ API
+     Lct* init(Allocator allocator, sz n)               n isolated vertices, each e()
+     Lct* init_with(Allocator allocator, Monoid[] src)  same, values from src
+     Lct* tinit(sz n)                                   init on the temp allocator
+     void free()
+     bool is_initialized()
+     sz   len()
+     void evert(sz v)                                   make v the root of its tree
+     void link(sz u, sz v)                              join two different trees
+     void cut(sz u, sz v)                               remove an existing edge
+     bool is_edge(sz u, sz v)
+     sz   find_root(sz v)
+     bool connected(sz u, sz v)
+     Monoid get(sz v)
+     void set(sz v, Monoid m)
+     Monoid path(sz u, sz v)                            fold along the path u -> v
+     void update_path(sz u, sz v, Action f)
+
+ USE
+     Lct t;
+     t.init(mem, 5);
+     defer t.free();
+
+     t.set(1, { 10, 1 });
+     t.link(0, 1);
+     t.link(1, 2);
+     long sum = t.path(0, 2).sum;
+
  @require concept::@is_monoid(Monoid) : "Link-cut tree requires a monoid with `op(a,b)` and `e()`"
  @require concept::@is_action(Action, Monoid) : "Link-cut tree requires an action with `act(m)`, `op(f)` and `e()`"
 *>

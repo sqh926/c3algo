@@ -5,6 +5,58 @@
 
  https://cp-algorithms.com/data_structures/fenwick.html
 
+ MONOID
+     The element is any struct with two methods:
+
+         fn T T.op(self, T other)   combines two elements, has to be associative
+                                    and, for this structure, also commutative
+         fn T T.e(self)             the neutral element, x.op(x.e()) == x
+
+     range() and set() cancel one prefix out of another, so they additionally need
+
+         fn T T.inv(self)           x.op(x.inv()) == x.e()
+
+     Some of the most popular monoids are already implemented in c3algo::algebra::monoid <Elem>:
+	 Sum, Min, Max, Prod, Xor, Gcd, SumLen.
+
+
+	 Classical example, the minimum together with how many times it occurs:
+
+         struct MinCount { long v; long n; }
+         fn MinCount MinCount.op(self, MinCount o) @inline
+         {
+             if (self.v != o.v) return self.v < o.v ? self : o;
+             return (MinCount) { self.v, self.n + o.n };
+         }
+         fn MinCount MinCount.e(self) @inline => (MinCount) { long::max, 0 };
+
+ INSTANTIATE
+     import c3algo::algebra::monoid;
+     import c3algo::collections::fenwicktree;
+
+     alias Fen = FenwickTree {Sum {long}};
+
+ API
+     Fen* init(Allocator allocator, sz n)              every element is e()
+     Fen* init_with(Allocator allocator, Monoid[] src) same, filled from src, O(n)
+     Fen* tinit(sz n)                                  init on the temp allocator
+     void free()
+     bool is_initialized()
+     sz   len()
+     void add(sz i, Monoid v)                          a[i] = a[i].op(v)
+     Monoid fold(sz r)                                 fold of [0, r)
+     Monoid range(sz l, sz r)                          fold of [l, r), needs inv()
+     void set(sz i, Monoid v)                          needs inv()
+
+ USE
+     Fen f;
+     f.init(mem, 8);
+     defer f.free();
+
+     f.add(3, {5});
+     f.add(5, {2});
+     long sum = f.range(1, 5).v;
+
  @require concept::@is_monoid(Monoid) : "Fenwick tree requires a monoid with `op(a,b)` and `e()`"
 *>
 module c3algo::collections::fenwicktree <Monoid>;
@@ -41,7 +93,7 @@ fn FenwickTree* FenwickTree.init(&self, Allocator allocator, sz n)
 }
 
 <*
- Initialize a Fenwick tree with `values`, folding every node in O(n) time.
+ Initialize a Fenwick tree with `values`.
 
  @param [&inout] allocator : "The allocator for the array"
  @param [in] values : "The initial elements"
@@ -137,7 +189,7 @@ fn Monoid FenwickTree.fold(&self, sz r)
 }
 
 <*
- Fold of the range [l, r), obtained by cancelling the shorter prefix out of the longer one.
+ Fold of the range [l, r).
 
  @param l : "The first position of the range"
  @param r : "One past the last position of the range"

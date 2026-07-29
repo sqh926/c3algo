@@ -3,6 +3,45 @@
  A variant of self-balancing binary search tree.
  https://en.wikipedia.org/wiki/AVL_tree
 
+ KEY
+     Key is any type that supports <, which is all the builtin numbers and any
+     struct with
+
+         fn bool T.less(self, T other) @operator(<)
+
+     Elements with equal keys are stored one-of-a-kind.
+
+ INSTANTIATE
+     import c3algo::collections::avltree;
+
+     alias Set = AVLTree {long};
+
+ API
+     Set* init(Allocator allocator)                    an empty set
+     Set* tinit()                                      init on the temp allocator
+     void free()
+     void clear()
+     bool is_initialized()
+     sz   len()
+     bool is_empty()
+     bool insert(Key key)                              false if the key was there
+     bool erase(Key key)                               false if the key was not there
+     bool contains(Key key)
+     Key  kth(sz k)                                    the k-th smallest, 0 based
+     sz   count_leq(Key x)                             how many keys are <= x
+     Key? floor(Key x)                                 largest key <= x, else NOT_FOUND
+     Key? ceil(Key x)                                  smallest key >= x, else NOT_FOUND
+
+ USE
+     Set s;
+     s.init(mem);
+     defer s.free();
+
+     s.insert(5);
+     s.insert(1);
+     long smallest = s.kth(0);
+     if (try got = s.floor(4)) io::printfn("floor %d", got);
+
  @require concept::@is_ordered(Key) : "AVL Tree requires Key to support <"
 *>
 module c3algo::collections::avltree <Key>;
@@ -199,7 +238,7 @@ fn sz AVLTree.count_leq(&self, Key x)
  @param x : "The key to compare against"
 
  @return "The greatest key not greater than `x`"
- @return? NOT_FOUND
+ @return ? NOT_FOUND
 *>
 fn Key? AVLTree.floor(&self, Key x)
 {
@@ -222,7 +261,7 @@ fn Key? AVLTree.floor(&self, Key x)
  @param x : "The key to compare against"
 
  @return "The smallest key not less than `x`"
- @return? NOT_FOUND
+ @return ? NOT_FOUND
 *>
 fn Key? AVLTree.ceil(&self, Key x)
 {

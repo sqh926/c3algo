@@ -4,6 +4,32 @@
 
  All the optimization tricks used here, are taken from this article:
  https://codeforces.com/blog/entry/142860
+
+ INSTANTIATE
+     import c3algo::convolution::fft;
+     alias convolution = fft::convolution {double};
+     alias convolution_mod = fft::convolution_mod {double};
+
+ API
+     void fft_inplace(Ftype[] in)                     evaluate, length a power of two
+     void ifft_inplace(Ftype[] in)                    interpolate, undoing fft_inplace
+     void convolution(long[] dst, long[] a, long[] b, Allocator scratch = mem)
+     void convolution_mod(int[] dst, int[] a, int[] b, int mod, Allocator scratch = mem)
+
+     Evaluations come out in the order the splits produce them, not in the plain
+     transform order; only the pair fft_inplace / ifft_inplace agrees on it.
+
+ USE
+     long[] a = { 1, 2, 3 };
+     long[] b = { 4, 5 };
+     long[] c = mem::new_array(long, a.len + b.len - 1);
+     defer mem::free(c);
+     convolution(c, a, b);
+
+     int[] ma = { 1, 2, 3 };
+     int[] mb = { 4, 5 };
+     int[] mc = mem::new_array(int, ma.len + mb.len - 1);
+     convolution_mod(mc, ma, mb, 1000000007);
 *>
 module c3algo::convolution::fft <Real>;
 
@@ -333,7 +359,7 @@ macro bool are_residues(int[] values, int limit) @local
 
  @param [out] dst : "Where the split values go"
  @param [in] src : "The residues to load"
- @param factor : "The i of the powers each value gets scaled by"
+ @param factor : "The base of the powers each value gets scaled by"
  @param bar : "The modulus"
  @param cut : "Where a value is split, the square root of the modulus rounded up"
 *>

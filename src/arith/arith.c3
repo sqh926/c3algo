@@ -1,6 +1,28 @@
 // @title Arithmetic
 <*
- Binary gcd, modular multiplication and modular exponentiation.
+ Utility arithmetic functions
+
+ INSTANTIATE
+     import c3algo::arith;
+
+ API
+     T gcd(...)                            greatest common divisor, variadic arguments
+     T mulmod(a, b, m)                     a * b mod m without overflowing
+     T bpow(a, n, m)                       a to the power n mod m
+     Barrett barrett(ulong mod)            a modulus with a precomputed reciprocal
+     ulong Barrett.reduce(ulong x)         x mod the stored modulus, any x
+     long Barrett.reduce_signed(long x)    same for a signed x, result never negative
+     ulong Barrett.mul(ulong a, ulong b)   a * b mod the stored modulus, both reduced
+
+	 Barrett should be used when you're using a runtime modulus a lot.
+
+ USE
+     long g = arith::gcd(12, 18, 30);
+     long p = arith::bpow(3, 100, 1000000007);
+
+     Barrett bar = arith::barrett(1000000007);
+     ulong acc = 1;
+     foreach (v : values) acc = bar.mul(acc, (ulong)v);
 *>
 module c3algo::arith;
 

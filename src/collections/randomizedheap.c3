@@ -3,6 +3,50 @@
  Meldable priority queue. Source:
  https://cp-algorithms.com/data_structures/randomized_heap.html
 
+ COMPARATOR
+     Cmp decides which key is served first, through one method:
+
+         fn bool C.before(self, Key a, Key b)   true when a has to come out first
+
+
+	 Example:
+
+         struct Job { long len; long id; }
+
+         struct Longest { char unused; }
+         fn bool Longest.before(self, Job a, Job b) @inline
+         {
+             return a.len != b.len ? a.len > b.len : a.id < b.id;
+         }
+
+ INSTANTIATE
+     import c3algo::algebra::concept;
+     import c3algo::collections::randomizedheap;
+
+     alias Heap = RandomizedHeap {long, Less};
+
+ API
+     Heap* init(Allocator allocator)                   an empty heap
+     Heap* tinit()                                     init on the temp allocator
+     void free()
+     void clear()
+     bool is_initialized()
+     sz   len()
+     bool is_empty()
+     void push(Key key)
+     Key? top()                                        NO_MORE_ELEMENT when empty
+     Key? pop()                                        NO_MORE_ELEMENT when empty
+     void merge(Heap* other)                           absorbs other and empties it
+
+ USE
+     Heap h;
+     h.init(mem);
+     defer h.free();
+
+     h.push(5);
+     h.push(1);
+     if (try best = h.pop()) io::printfn("served %d", best);
+
  @require concept::@is_comparator(Cmp, Key) : "Randomized heap requires a comparator with `before(a,b)`"
 *>
 module c3algo::collections::randomizedheap <Key, Cmp>;
@@ -112,7 +156,7 @@ fn void RandomizedHeap.push(&self, Key key)
 
 <*
  @return "The element the comparator puts first, the element is left in the heap"
- @return? NO_MORE_ELEMENT
+ @return ? NO_MORE_ELEMENT
 *>
 fn Key? RandomizedHeap.top(&self)
 {
@@ -124,7 +168,7 @@ fn Key? RandomizedHeap.top(&self)
  Remove the element the comparator puts first.
 
  @return "The removed element"
- @return? NO_MORE_ELEMENT
+ @return ? NO_MORE_ELEMENT
 *>
 fn Key? RandomizedHeap.pop(&self)
 {

@@ -1,6 +1,8 @@
 // @title Random number generator
 <*
- A xorshift64 generator
+ A xorshift64 generator. The state starts from a fixed constant, so a program is
+ reproducible from run to run; call seed() with the clock where unpredictability
+ actually matters.
 
  https://en.wikipedia.org/wiki/Xorshift
 *>
