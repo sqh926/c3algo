@@ -2,7 +2,6 @@
 // PROBLEM: https://judge.yosupo.jp/problem/dynamic_tree_vertex_set_path_composite
 
 import c3algo::collections::linkcuttree;
-import c3algo::algebra::monoid;
 import c3algo::algebra::action;
 import c3algo::numbertheory::modint;
 import c3algo::io;
